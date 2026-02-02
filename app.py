@@ -1,4 +1,4 @@
-Import streamlit as st
+import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image
@@ -425,4 +425,4 @@ def main():
 if __name__ == "__main__":
     if 'mode' not in st.session_state:
         st.session_state.mode = "auto"
-    main() یہ streamlit پہ ہوسٹ ہونے کیلئے کافی ہے؟
+    main()
