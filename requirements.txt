@@ -2,5 +2,5 @@ streamlit
 opencv-python-headless
 numpy
 pillow
-mediapipe
-rembg
+
+
