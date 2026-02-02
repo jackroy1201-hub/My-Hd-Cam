@@ -1,10 +1,8 @@
-import streamlit as st  # یہاں 'i' چھوٹا ہونا چاہیے
+import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance
+from PIL import Image
 import io
-import tempfile
-from pathlib import Path
 
 # 1. Page Config
 st.set_page_config(page_title="Family AI Master Studio", layout="wide")
@@ -30,7 +28,7 @@ def enhance_to_8k_advanced(img):
     gray = cv2.cvtColor(denoised, cv2.COLOR_BGR2GRAY)
     edges = cv2.Canny(gray, 50, 150)
     edge_mask = cv2.GaussianBlur(edges, (5, 5), 0) / 255.0
-    edge_mask = np.stack([edge_mask] * 3, axis=-1)
+    edge_mask = np.stack([edge_mask] * 3, axis=2)  # Fixed axis parameter
     
     sharpened = cv2.addWeighted(denoised, 1.0, high_pass, 0.3 + 0.2 * edge_mask, 0)
     
@@ -70,12 +68,11 @@ def apply_face_wash_pro(img):
     # Refine skin mask
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel)
-    skin_mask = cv2.morphologyEx(skin_mask, upper_skin, kernel) # fix applied for logic
     skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_OPEN, kernel)
     
     # Gaussian blur for soft edges
     skin_mask_soft = cv2.GaussianBlur(skin_mask.astype(np.float32), (21, 21), 0) / 255.0
-    skin_mask_soft = np.stack([skin_mask_soft] * 3, axis=-1)
+    skin_mask_soft = np.stack([skin_mask_soft] * 3, axis=2)  # Fixed axis parameter
     
     # Apply different processing to skin and non-skin areas
     # Process skin areas
@@ -129,7 +126,8 @@ def apply_hdr_effect(img, strength=0.3):
     tonemapped = np.tanh(hdr / 255.0 * (1 + strength)) * 255.0
     
     # Local contrast enhancement
-    lab = cv2.cvtColor(tonemapped.astype(np.uint8), cv2.COLOR_BGR2LAB)
+    tonemapped_uint8 = tonemapped.astype(np.uint8)  # Fixed: Convert to uint8 first
+    lab = cv2.cvtColor(tonemapped_uint8, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     
     clahe = cv2.createCLAHE(clipLimit=0.5, tileGridSize=(8, 8))
@@ -172,7 +170,7 @@ def apply_cinematic_look(img):
     kernel = kernel_y * kernel_x.T
     
     mask = kernel / kernel.max()
-    mask = np.stack([mask] * 3, axis=-1)
+    mask = np.stack([mask] * 3, axis=2)  # Fixed axis parameter
     
     result = result * (0.8 + 0.2 * mask)
     
@@ -193,7 +191,7 @@ def apply_ai_portrait_mode(img):
     # Create mask (1 for subject, 0 for background)
     mask = 255 - edges_dilated
     mask = cv2.GaussianBlur(mask, (21, 21), 0) / 255.0
-    mask = np.stack([mask] * 3, axis=-1)
+    mask = np.stack([mask] * 3, axis=2)  # Fixed axis parameter
     
     # Blur background
     background_blur = cv2.GaussianBlur(img, (25, 25), 0)
@@ -438,7 +436,7 @@ if 'processed' in st.session_state:
         kernel = kernel_y * kernel_x.T
         
         mask = 1 - kernel * vignette_strength
-        mask = np.stack([mask] * 3, axis=-1)
+        mask = np.stack([mask] * 3, axis=2)  # Fixed axis parameter
         final_img = (final_img * mask).astype(np.uint8)
     
     # Apply temperature and tint
@@ -509,7 +507,7 @@ if 'processed' in st.session_state:
         st.metric("ترمیم شدہ سائز", f"{final_img.shape[1]}x{final_img.shape[0]}")
     
     with info_col3:
-        enhancement = "✅ 8K Enhanced" if st.session_state.applied_8k else "⭕ Standard"
+        enhancement = "✅ 8K Enhanced" if st.session_state.get('applied_8k', False) else "⭕ Standard"
         st.metric("Enhancement", enhancement)
 
 # --- Tips and Instructions ---
@@ -517,7 +515,8 @@ st.sidebar.title("💡 تجاویز")
 st.sidebar.info("""
 **بہترین نتائج کے لیے:**
 
-1. **ترتیب:** - پہلے AI Skin Retouch
+1. **ترتیب:** 
+   - پہلے AI Skin Retouch
    - پھر Face Glow Pro
    - آخر میں 8K Ultra HD
 
