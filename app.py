@@ -239,6 +239,229 @@ def apply_skin_retouch(img):
     
     return result.astype(np.uint8)
 
+# --- NEW: Hair Color Functions ---
+def apply_hair_color_change(img, color_type="brown", intensity=0.7):
+    """Change hair color professionally
+    
+    Args:
+        img: Input BGR image
+        color_type: hair color type
+            - "black": Natural black
+            - "brown": Light brown
+            - "dark_brown": Dark brown
+            - "blonde": Blonde
+            - "auburn": Auburn/red
+            - "burgundy": Burgundy/wine
+            - "gray": Gray/silver
+            - "highlights": Natural highlights
+        intensity: Color change intensity (0.0 to 1.0)
+    """
+    # Convert to LAB color space for better color manipulation
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    
+    # Detect hair-like areas (dark to medium luminance)
+    # Hair typically has lower luminance than skin but not too dark
+    hair_mask = cv2.inRange(l, 20, 100)
+    
+    # Refine hair mask with morphological operations
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    hair_mask = cv2.morphologyEx(hair_mask, cv2.MORPH_CLOSE, kernel)
+    hair_mask = cv2.morphologyEx(hair_mask, cv2.MORPH_OPEN, kernel)
+    
+    # Apply Gaussian blur for soft edges
+    hair_mask_soft = cv2.GaussianBlur(hair_mask.astype(np.float32), (15, 15), 0) / 255.0
+    hair_mask_soft = np.stack([hair_mask_soft] * 3, axis=2)
+    
+    # Define color adjustments for different hair colors
+    color_adjustments = {
+        "black": {"a_adj": -10, "b_adj": -5, "l_factor": 0.8},
+        "brown": {"a_adj": 10, "b_adj": 20, "l_factor": 1.1},
+        "dark_brown": {"a_adj": 5, "b_adj": 10, "l_factor": 0.9},
+        "blonde": {"a_adj": -5, "b_adj": 40, "l_factor": 1.3},
+        "auburn": {"a_adj": 30, "b_adj": 15, "l_factor": 1.1},
+        "burgundy": {"a_adj": 40, "b_adj": -10, "l_factor": 1.0},
+        "gray": {"a_adj": 0, "b_adj": 0, "l_factor": 1.5, "desaturate": True},
+        "highlights": {"a_adj": 0, "b_adj": 15, "l_factor": 1.2, "streaks": True}
+    }
+    
+    if color_type not in color_adjustments:
+        color_type = "brown"  # Default to brown
+    
+    adj = color_adjustments[color_type]
+    
+    # Create adjusted LAB channels
+    l_adj = l.copy().astype(np.float32)
+    a_adj = a.copy().astype(np.float32)
+    b_adj = b.copy().astype(np.float32)
+    
+    # Apply luminance adjustment
+    if color_type == "gray":
+        # For gray hair, increase luminance more in hair areas
+        gray_boost = 30 * hair_mask_soft[:, :, 0]
+        l_adj = np.where(hair_mask > 0, np.clip(l_adj + gray_boost, 0, 255), l_adj)
+    else:
+        l_adj = np.where(hair_mask > 0, np.clip(l_adj * adj["l_factor"], 0, 255), l_adj)
+    
+    # Apply color channel adjustments
+    a_adj = np.where(hair_mask > 0, np.clip(a_adj + adj["a_adj"], 0, 255), a_adj)
+    b_adj = np.where(hair_mask > 0, np.clip(b_adj + adj["b_adj"], 0, 255), b_adj)
+    
+    # Special effects for highlights
+    if color_type == "highlights" and adj.get("streaks", False):
+        # Create highlight streaks
+        rows, cols = l.shape
+        for i in range(rows):
+            if i % 20 == 0:  # Create streaks every 20 pixels
+                streak_width = np.random.randint(5, 15)
+                streak_mask = np.zeros_like(hair_mask)
+                start_col = np.random.randint(0, cols - streak_width)
+                streak_mask[i, start_col:start_col+streak_width] = 255
+                
+                # Add extra brightness for streaks
+                l_streak = l_adj[i, start_col:start_col+streak_width] * 1.3
+                l_adj[i, start_col:start_col+streak_width] = np.clip(l_streak, 0, 255)
+                
+                # Add golden tone to streaks
+                b_streak = b_adj[i, start_col:start_col+streak_width] + 25
+                b_adj[i, start_col:start_col+streak_width] = np.clip(b_streak, 0, 255)
+    
+    # For gray hair, desaturate
+    if color_type == "gray" and adj.get("desaturate", False):
+        # Reduce color saturation in hair areas
+        a_adj = np.where(hair_mask > 0, a_adj * 0.3, a_adj)
+        b_adj = np.where(hair_mask > 0, b_adj * 0.3, b_adj)
+    
+    # Convert back to uint8
+    l_adj = l_adj.astype(np.uint8)
+    a_adj = a_adj.astype(np.uint8)
+    b_adj = b_adj.astype(np.uint8)
+    
+    # Merge adjusted LAB channels
+    lab_adj = cv2.merge((l_adj, a_adj, b_adj))
+    
+    # Convert back to BGR
+    bgr_adj = cv2.cvtColor(lab_adj, cv2.COLOR_LAB2BGR)
+    
+    # Blend with original based on intensity
+    result = cv2.addWeighted(img, 1 - intensity, bgr_adj, intensity, 0)
+    
+    # Apply smoothing to hair area for natural look
+    hair_only = cv2.bitwise_and(result, result, mask=hair_mask)
+    hair_smoothed = cv2.bilateralFilter(hair_only, 9, 50, 50)
+    
+    # Create final mask with feathering
+    hair_mask_feathered = cv2.GaussianBlur(hair_mask, (21, 21), 0) / 255.0
+    hair_mask_feathered = np.stack([hair_mask_feathered] * 3, axis=2)
+    
+    # Final blend
+    final_result = img * (1 - hair_mask_feathered) + hair_smoothed * hair_mask_feathered
+    
+    return final_result.astype(np.uint8)
+
+def apply_hair_highlights(img, highlight_color="golden", intensity=0.6):
+    """Add natural-looking highlights to hair
+    
+    Args:
+        img: Input BGR image
+        highlight_color: Type of highlights
+            - "golden": Golden blonde highlights
+            - "caramel": Caramel brown highlights
+            - "ash": Ash blonde highlights
+            - "red": Red/auburn highlights
+            - "chocolate": Chocolate brown highlights
+        intensity: Highlight intensity (0.0 to 1.0)
+    """
+    # Convert to HSV for better highlight control
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
+    h, s, v = cv2.split(hsv)
+    
+    # Detect hair areas (medium value/lightness)
+    hair_mask = cv2.inRange(v, 40, 120).astype(np.float32)
+    
+    # Create highlight pattern (simulating natural highlights)
+    rows, cols = hair_mask.shape
+    
+    # Create multiple highlight streaks
+    highlight_pattern = np.zeros_like(hair_mask)
+    
+    # Define highlight color adjustments
+    highlight_colors = {
+        "golden": {"hue_shift": -10, "sat_boost": 0.8, "val_boost": 1.3},
+        "caramel": {"hue_shift": 5, "sat_boost": 1.1, "val_boost": 1.2},
+        "ash": {"hue_shift": 0, "sat_boost": 0.6, "val_boost": 1.4},
+        "red": {"hue_shift": -30, "sat_boost": 1.2, "val_boost": 1.1},
+        "chocolate": {"hue_shift": 10, "sat_boost": 1.0, "val_boost": 1.15}
+    }
+    
+    if highlight_color not in highlight_colors:
+        highlight_color = "golden"
+    
+    color_adj = highlight_colors[highlight_color]
+    
+    # Create random highlight streaks
+    num_streaks = rows // 50  # Adjust based on image height
+    for _ in range(num_streaks):
+        start_row = np.random.randint(0, rows - 50)
+        streak_width = np.random.randint(8, 20)
+        start_col = np.random.randint(0, cols - streak_width)
+        
+        # Create tapered streak
+        for i in range(streak_width):
+            col_pos = start_col + i
+            # Create taper effect at ends
+            taper = np.sin((i / streak_width) * np.pi)
+            
+            # Add highlight with varying intensity
+            for j in range(30):  # Vertical length of highlight
+                row_pos = start_row + j
+                if 0 <= row_pos < rows and 0 <= col_pos < cols:
+                    if hair_mask[row_pos, col_pos] > 0:
+                        # Apply taper to intensity
+                        highlight_strength = taper * (1 - abs(j - 15) / 15) * intensity
+                        highlight_pattern[row_pos, col_pos] = max(
+                            highlight_pattern[row_pos, col_pos],
+                            highlight_strength
+                        )
+    
+    # Apply Gaussian blur to highlight pattern for natural look
+    highlight_pattern = cv2.GaussianBlur(highlight_pattern, (15, 15), 0)
+    highlight_pattern = np.clip(highlight_pattern, 0, 1)
+    
+    # Expand highlight pattern to 3 channels
+    highlight_pattern_3d = np.stack([highlight_pattern] * 3, axis=2)
+    
+    # Apply highlights to HSV image
+    h_adj = h.copy()
+    s_adj = s.copy()
+    v_adj = v.copy()
+    
+    # Adjust color in highlight areas
+    highlight_areas = highlight_pattern > 0
+    
+    # Apply hue shift
+    h_adj[highlight_areas] = (h_adj[highlight_areas] + color_adj["hue_shift"]) % 180
+    
+    # Boost saturation
+    s_adj[highlight_areas] = np.clip(s_adj[highlight_areas] * color_adj["sat_boost"], 0, 255)
+    
+    # Boost value (brightness)
+    v_adj[highlight_areas] = np.clip(v_adj[highlight_areas] * color_adj["val_boost"], 0, 255)
+    
+    # Merge adjusted channels
+    hsv_adj = cv2.merge((h_adj, s_adj, v_adj))
+    
+    # Convert back to BGR
+    bgr_adj = cv2.cvtColor(hsv_adj.astype(np.uint8), cv2.COLOR_HSV2BGR)
+    
+    # Blend with original using highlight pattern
+    result = img * (1 - highlight_pattern_3d) + bgr_adj * highlight_pattern_3d
+    
+    # Final smoothing
+    result = cv2.bilateralFilter(result.astype(np.uint8), 7, 30, 30)
+    
+    return result.astype(np.uint8)
+
 # --- UI Styling ---
 st.markdown("""
 <style>
@@ -254,6 +477,12 @@ st.markdown("""
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .hair-color-btn {
+        background: linear-gradient(45deg, #8B4513 0%, #D2691E 100%) !important;
+    }
+    .highlight-btn {
+        background: linear-gradient(45deg, #FFD700 0%, #FFA500 100%) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -275,6 +504,185 @@ if img_file:
 if 'processed' in st.session_state:
     # --- Progress Bar for Processing ---
     progress_bar = st.progress(0)
+    
+    # --- NEW: Hair Color Tools Section ---
+    st.write("### 👩‍🦰 بالوں کے رنگ (Hair Colors)")
+    
+    # Hair color selection in tabs
+    hair_tab1, hair_tab2 = st.tabs(["🎨 مکمل رنگ تبدیل", "✨ ہائی لائٹس شامل کریں"])
+    
+    with hair_tab1:
+        st.write("بالوں کا مکمل رنگ تبدیل کریں")
+        
+        # Natural hair colors
+        hair_col1, hair_col2, hair_col3, hair_col4 = st.columns(4)
+        
+        with hair_col1:
+            if st.button("⚫ سیاہ بال", use_container_width=True, key="black_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="black", 
+                    intensity=0.7
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col2:
+            if st.button("🤎 براؤن بال", use_container_width=True, key="brown_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="brown", 
+                    intensity=0.7
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col3:
+            if st.button("👩‍🦳 گولڈن بلونڈ", use_container_width=True, key="blonde_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="blonde", 
+                    intensity=0.7
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col4:
+            if st.button("🍷 برگنڈی", use_container_width=True, key="burgundy_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="burgundy", 
+                    intensity=0.6
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        # More hair colors
+        hair_col5, hair_col6, hair_col7, hair_col8 = st.columns(4)
+        
+        with hair_col5:
+            if st.button("🍫 چاکلیٹ براؤن", use_container_width=True, key="dark_brown_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="dark_brown", 
+                    intensity=0.7
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col6:
+            if st.button("🔴 آبن/سرخ", use_container_width=True, key="auburn_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="auburn", 
+                    intensity=0.6
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col7:
+            if st.button("👨‍🦳 سرمئی/سلور", use_container_width=True, key="gray_hair"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="gray", 
+                    intensity=0.8
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with hair_col8:
+            if st.button("✨ قدرتی ہائی لائٹس", use_container_width=True, key="natural_highlights"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_color_change(
+                    st.session_state.processed, 
+                    color_type="highlights", 
+                    intensity=0.5
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+    
+    with hair_tab2:
+        st.write("بالوں میں قدرتی ہائی لائٹس شامل کریں")
+        
+        highlight_col1, highlight_col2, highlight_col3, highlight_col4 = st.columns(4)
+        
+        with highlight_col1:
+            if st.button("🌟 گولڈن ہائی لائٹس", use_container_width=True, key="golden_highlights"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_highlights(
+                    st.session_state.processed,
+                    highlight_color="golden",
+                    intensity=0.6
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with highlight_col2:
+            if st.button("🍯 کیریمل ہائی لائٹس", use_container_width=True, key="caramel_highlights"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_highlights(
+                    st.session_state.processed,
+                    highlight_color="caramel",
+                    intensity=0.6
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with highlight_col3:
+            if st.button("🌫️ ایش بلونڈ ہائی لائٹس", use_container_width=True, key="ash_highlights"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_highlights(
+                    st.session_state.processed,
+                    highlight_color="ash",
+                    intensity=0.5
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        with highlight_col4:
+            if st.button("🍒 ریڈ ہائی لائٹس", use_container_width=True, key="red_highlights"):
+                progress_bar.progress(30)
+                st.session_state.processed = apply_hair_highlights(
+                    st.session_state.processed,
+                    highlight_color="red",
+                    intensity=0.5
+                )
+                st.session_state.history.append(st.session_state.processed.copy())
+                progress_bar.progress(100)
+                st.rerun()
+        
+        # Highlight intensity control
+        st.write("ہائی لائٹس کی شدت")
+        highlight_intensity = st.slider("ہائی لائٹس کی طاقت", 0.0, 1.0, 0.6, 0.1, key="highlight_slider")
+        
+        if st.button("🔄 منتخب شدہ ہائی لائٹس اپلائی کریں", use_container_width=True, key="apply_custom_highlights"):
+            progress_bar.progress(30)
+            st.session_state.processed = apply_hair_highlights(
+                st.session_state.processed,
+                highlight_color="golden",  # Default to golden
+                intensity=highlight_intensity
+            )
+            st.session_state.history.append(st.session_state.processed.copy())
+            progress_bar.progress(100)
+            st.rerun()
     
     # --- Professional Tools Section ---
     st.write("### 🎯 پرو فیسشنل ٹولز")
@@ -515,20 +923,32 @@ st.sidebar.title("💡 تجاویز")
 st.sidebar.info("""
 **بہترین نتائج کے لیے:**
 
-1. **ترتیب:** 
-   - پہلے AI Skin Retouch
-   - پھر Face Glow Pro
-   - آخر میں 8K Ultra HD
+**بالوں کے رنگ:**
+- پہلے اصل تصویر پر بالوں کے رنگ تبدیل کریں
+- ہلکے رنگوں کے لیے "براؤن" یا "گولڈن بلونڈ"
+- گہرے رنگوں کے لیے "سیاہ" یا "چاکلیٹ براؤن"
+- خصوصی رنگوں کے لیے "برگنڈی" یا "آبن"
 
-2. **فلٹرز:**
-   - Cinematic Look: فلمی رنگ
-   - Portrait Mode: بیک گراؤنڈ بلر
-   - Natural HDR: قدرتی ڈیپتھ
+**ہائی لائٹس:**
+- بالوں کے رنگ کے بعد ہائی لائٹس شامل کریں
+- "گولڈن ہائی لائٹس": قدرتی روشن اثر
+- "کیریمل ہائی لائٹس": گرم سنہری رنگ
 
-3. **ایڈجسٹمنٹ:**
-   - Sharpness: 1.2-1.3
-   - Noise Reduction: 30-50
-   - Temperature: ذائقہ کے مطابق
+**ترتیب:** 
+1. AI Skin Retouch
+2. Face Glow Pro
+3. بالوں کے رنگ یا ہائی لائٹس
+4. 8K Ultra HD
+
+**فلٹرز:**
+- Cinematic Look: فلمی رنگ
+- Portrait Mode: بیک گراؤنڈ بلر
+- Natural HDR: قدرتی ڈیپتھ
+
+**ایڈجسٹمنٹ:**
+- Sharpness: 1.2-1.3
+- Noise Reduction: 30-50
+- Temperature: ذائقہ کے مطابق
 """)
 
 st.sidebar.title("⚙️ سیٹنگز")
@@ -538,6 +958,11 @@ default_quality = st.sidebar.selectbox(
 )
 
 auto_enhance = st.sidebar.checkbox("Auto-enhance on upload", value=True)
+
+# Hair color intensity control in sidebar
+st.sidebar.title("👩‍🦰 بالوں کے رنگ سیٹنگز")
+hair_intensity = st.sidebar.slider("رنگ کی شدت", 0.1, 1.0, 0.7, 0.1)
+highlight_intensity_sidebar = st.sidebar.slider("ہائی لائٹس کی شدت", 0.1, 1.0, 0.6, 0.1)
 
 if st.sidebar.button("Clear Cache"):
     for key in list(st.session_state.keys()):
