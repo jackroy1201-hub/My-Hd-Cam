@@ -1,4 +1,4 @@
-Import streamlit as st
+import streamlit as st  # یہاں 'i' چھوٹا ہونا چاہیے
 import cv2
 import numpy as np
 from PIL import Image, ImageEnhance
@@ -70,6 +70,7 @@ def apply_face_wash_pro(img):
     # Refine skin mask
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel)
+    skin_mask = cv2.morphologyEx(skin_mask, upper_skin, kernel) # fix applied for logic
     skin_mask = cv2.morphologyEx(skin_mask, cv2.MORPH_OPEN, kernel)
     
     # Gaussian blur for soft edges
@@ -516,8 +517,7 @@ st.sidebar.title("💡 تجاویز")
 st.sidebar.info("""
 **بہترین نتائج کے لیے:**
 
-1. **ترتیب:** 
-   - پہلے AI Skin Retouch
+1. **ترتیب:** - پہلے AI Skin Retouch
    - پھر Face Glow Pro
    - آخر میں 8K Ultra HD
 
