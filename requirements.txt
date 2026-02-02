@@ -1,7 +1,9 @@
 streamlit
 opencv-python-headless
 numpy
-pillow
+Pillow
+streamlit-image-comparison
+
 
 
 
