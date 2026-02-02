@@ -1,143 +1,168 @@
 import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
-import io, time
+from PIL import Image, ImageEnhance
+import io
 
-# --- پیج سیٹنگز اور ڈیزائن ---
-st.set_page_config(page_title="Roman HD Studio Pro FINAL", layout="centered")
+# --- 1. پیج کنفیگریشن (موبائل ویو کے لیے بہترین) ---
+st.set_page_config(
+    page_title="Family AI Studio Pro",
+    page_icon="📸",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
+# --- 2. ماڈلز لوڈ کرنا (MediaPipe for Portrait Mode) ---
+@st.cache_resource
+def load_models():
+    try:
+        import mediapipe.python.solutions.selfie_segmentation as mp_selfie
+        return mp_selfie.SelfieSegmentation(model_selection=1)
+    except Exception:
+        return None
+
+selfie_seg = load_models()
+
+# --- 3. موبائل فرینڈلی ڈیزائن (Custom CSS) ---
 st.markdown("""
 <style>
-.stButton>button{
-    width:100%;height:3.6em;border-radius:14px;
-    font-weight:bold;border:1px solid #ddd;margin-bottom:6px;
-}
-.stButton>button:hover{background:#fff3e0;border-color:#ff9800}
-.auto button{
-    background:linear-gradient(135deg,#FFD700,#FF8C00) !important;
-    font-size:1.1em;border:none !important;color:black !important;
-}
+    .stButton>button {
+        width: 100%;
+        border-radius: 12px;
+        height: 3.5em;
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        font-weight: bold;
+        border: none;
+        margin-top: 10px;
+    }
+    .main-title {
+        text-align: center;
+        font-size: 28px !important;
+        color: #1E1E1E;
+        margin-bottom: 20px;
+    }
+    .stSelectbox, .stSlider {
+        margin-bottom: 15px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📸 Roman HD Studio Pro FINAL")
+# --- 4. سیکیورٹی اور لاگ ان سسٹم ---
+if 'auth' not in st.session_state: st.session_state.auth = False
+user_db = {"Admin": "12@24", "Family": "4590$"}
 
-pic = st.file_uploader("تصویر منتخب کریں", type=["jpg","png","jpeg"])
-
-def progress_bar(txt):
-    bar = st.progress(0)
-    for i in range(100):
-        time.sleep(0.003)
-        bar.progress(i + 1)
-    st.success(txt)
-
-if pic:
-    original = Image.open(pic).convert("RGB")
-    img_array = np.array(original)
-
-    if "img" not in st.session_state:
-        st.session_state.img = original
-
-    # --- 🤖 AI AUTO HD BEAUTY ---
-    st.markdown('<div class="auto">', unsafe_allow_html=True)
-    if st.button("🤖 AI AUTO HD BEAUTY"):
-        progress_bar("AI HD Done!")
-        img_cv = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-        smooth = cv2.bilateralFilter(img_cv, 15, 90, 90)
-        glow = cv2.GaussianBlur(smooth, (0, 0), 3)
-        hd = cv2.addWeighted(smooth, 1.6, glow, -0.6, 0)
-        hd = cv2.detailEnhance(hd, sigma_s=15, sigma_r=0.15)
-        final_rgb = cv2.cvtColor(hd, cv2.COLOR_BGR2RGB)
-        final = Image.fromarray(final_rgb)
-        final = ImageEnhance.Sharpness(final).enhance(1.8)
-        final = ImageEnhance.Color(final).enhance(1.25)
-        st.session_state.img = ImageEnhance.Brightness(final).enhance(1.05)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.write("### 🎨 فلٹرز")
-    c1, c2 = st.columns(2)
-
-    with c1:
-        if st.button("🌈 Vivid HD"):
-            progress_bar("Vivid Done")
-            img = ImageEnhance.Color(original).enhance(2)
-            st.session_state.img = ImageEnhance.Contrast(img).enhance(1.3)
-
-        if st.button("🎵 TikTok Glow"):
-            progress_bar("Glow Done")
-            arr = np.array(original)
-            blur = cv2.GaussianBlur(arr, (9, 9), 0)
-            st.session_state.img = Image.fromarray(cv2.addWeighted(arr, 1.3, blur, -0.3, 0))
-
-        if st.button("🌟 Model Look"):
-            progress_bar("Model Done")
-            img = ImageEnhance.Sharpness(original).enhance(1.7)
-            st.session_state.img = ImageEnhance.Color(img).enhance(1.3)
-
-        if st.button("💄 Beauty Smooth"):
-            progress_bar("Beauty Done")
-            smooth = cv2.bilateralFilter(img_array, 20, 100, 100)
-            st.session_state.img = Image.fromarray(smooth)
-
-    with c2:
-        if st.button("👻 Snapchat Clean"):
-            progress_bar("Clean Done")
-            img = ImageOps.autocontrast(original)
-            st.session_state.img = ImageEnhance.Sharpness(img).enhance(2.3)
-
-        if st.button("🍏 iPhone HD"):
-            progress_bar("iPhone Done")
-            img = ImageEnhance.Sharpness(original).enhance(2.6)
-            st.session_state.img = ImageEnhance.Contrast(img).enhance(1.15)
-
-        if st.button("🎭 Cinematic"):
-            progress_bar("Cinematic Done")
-            st.session_state.img = ImageEnhance.Contrast(original).enhance(1.9)
-
-        if st.button("💇 Hair Day Shine"):
-            progress_bar("Hair Shine Done")
-            img = ImageEnhance.Sharpness(original).enhance(2)
-            st.session_state.img = ImageEnhance.Brightness(img).enhance(1.05)
-
-    # --- 💇 HAIR COLOUR STUDIO ---
-    st.write("### 💇 Hair Colour Studio")
-    color = st.selectbox("بالوں کا رنگ منتخب کریں", ["None", "Brown", "Golden", "Red", "Blue Black", "Purple", "Blonde"])
-
-    if color != "None":
-        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
-        mask = cv2.inRange(hsv, (0, 20, 20), (180, 255, 120))
-        mask = cv2.GaussianBlur(mask, (25, 25), 0)
-        shades = {"Brown": (42, 42, 165), "Golden": (0, 215, 255), "Red": (60, 20, 220), 
-                  "Blue Black": (20, 20, 60), "Purple": (140, 0, 140), "Blonde": (180, 220, 255)}
-        col_img = np.full(img_array.shape, shades[color], dtype=np.uint8)
-        alpha = mask / 255.0
-        recolor = (img_array * (1 - alpha[..., None]) + col_img * alpha[..., None]).astype(np.uint8)
-        st.session_state.img = Image.fromarray(recolor)
-
-    # --- 📸 PORTRAIT MODE PRO (FIXED) ---
-    st.write("### 📸 Portrait Mode Pro")
-    depth = st.slider("بلر کی مقدار", 0, 40, 0)
-    if depth > 0:
-        h, w, _ = img_array.shape
-        # Integer conversion to prevent errors
-        center = (int(w / 2), int(h / 2))
-        axes = (int(w / 3), int(h / 1.8))
-        blur_img = cv2.GaussianBlur(img_array, (depth * 2 + 1, depth * 2 + 1), 0)
-        mask = np.zeros((h, w), np.uint8)
-        cv2.ellipse(mask, center, axes, 0, 0, 360, 255, -1)
-        mask_blur = cv2.GaussianBlur(mask, (201, 201), 0) / 255.0
-        out = (img_array * mask_blur[..., None] + blur_img * (1 - mask_blur[..., None])).astype(np.uint8)
-        st.session_state.img = Image.fromarray(out)
-
-    # ڈسپلے اور ڈاؤن لوڈ
-    st.image(st.session_state.img, use_container_width=True)
-    buf = io.BytesIO()
-    st.session_state.img.save(buf, "JPEG", quality=100, subsampling=0)
-    st.download_button("📥 Save FULL HD", buf.getvalue(), "Roman_Studio_Final.jpg", "image/jpeg")
-
-    if st.button("🔄 Reset"):
-        st.session_state.img = original
-        st.rerun()
+if not st.session_state.auth:
+    st.markdown("<h1 class='main-title'>🔐 Family Secure Login</h1>", unsafe_allow_html=True)
+    u = st.text_input("صارف کا نام (Username)")
+    p = st.text_input("پاس ورڈ (Password)", type="password")
+    if st.button("Unlock Studio"):
+        if u in user_db and p == user_db[u]:
+            st.session_state.auth = True
+            st.rerun()
+        else:
+            st.error("صارف کا نام یا پاس ورڈ غلط ہے")
 else:
-    st.info("ایڈیٹنگ شروع کرنے کے لیے تصویر اپ لوڈ کریں۔")
+    # --- مین ایپ انٹرفیس ---
+    st.markdown("<h1 class='main-title'>📸 TikTok AI HD Studio</h1>", unsafe_allow_html=True)
+    
+    # تصویر لینے یا اپلوڈ کرنے کا انتخاب
+    source = st.radio("تصویر کہاں سے لیں؟", ["Gallery Upload 📂", "Live Camera 🤳"], horizontal=True)
+    
+    img_file = None
+    if source == "Gallery Upload 📂":
+        img_file = st.file_uploader("تصویر منتخب کریں", type=["jpg", "png", "jpeg"])
+    else:
+        img_file = st.camera_input("کیمرے سے تصویر لیں")
+
+    if img_file:
+        # تصویر کو لوڈ کرنا
+        raw_img = Image.open(img_file).convert("RGB")
+        frame = cv2.cvtColor(np.array(raw_img), cv2.COLOR_RGB2BGR)
+        
+        st.write("---")
+        st.write("### 🎨 فلٹرز اور ایڈجسٹمنٹ")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            mode = st.selectbox("ٹک ٹاک فلٹرز منتخب کریں:", 
+                ["Natural HD", "Portrait Blur (AI)", "Night Vision 🌙", "TikTok Soft Glow", "Anime Cartoon", "Retro Aesthetic"])
+            bright = st.slider("چمک (Brightness)", 0.5, 2.0, 1.0)
+            
+        with col2:
+            hair_color = st.selectbox("بالوں کا رنگ بدلیں:", ["None", "Brown", "Golden", "Red", "Purple", "Pink"])
+            hair_int = st.slider("رنگ کی شدت (Intensity)", 0.0, 1.0, 0.6)
+
+        # --- پروسیسنگ انجن شروع ---
+        processed = frame.copy()
+
+        # 1. Night Vision (پرانا فیچر - CLAHE Lighting)
+        if mode == "Night Vision 🌙":
+            lab = cv2.cvtColor(processed, cv2.COLOR_BGR2LAB)
+            l, a, b = cv2.split(lab)
+            l = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8)).apply(l)
+            processed = cv2.cvtColor(cv2.merge((l,a,b)), cv2.COLOR_LAB2BGR)
+
+        # 2. TikTok Soft Glow (نیا فلٹر)
+        elif mode == "TikTok Soft Glow":
+            blur = cv2.GaussianBlur(processed, (25, 25), 0)
+            processed = cv2.addWeighted(processed, 1.3, blur, 0.4, 0)
+
+        # 3. Anime Cartoon (کارٹون لک)
+        elif mode == "Anime Cartoon":
+            color = cv2.bilateralFilter(processed, 9, 250, 250)
+            gray = cv2.cvtColor(processed, cv2.COLOR_BGR2GRAY)
+            blur = cv2.medianBlur(gray, 5)
+            edges = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+            processed = cv2.bitwise_and(color, color, mask=edges)
+
+        # 4. Retro Aesthetic
+        elif mode == "Retro Aesthetic":
+            processed = cv2.applyColorMap(processed, cv2.COLORMAP_PINK)
+
+        # 5. برائٹنس اور ایچ ڈی نکھار
+        processed = cv2.convertScaleAbs(processed, alpha=bright, beta=0)
+        if mode == "Natural HD":
+            processed = cv2.detailEnhance(processed, sigma_s=10, sigma_r=0.15)
+
+        # 6. بالوں کا رنگ (Advanced Hair Masking)
+        if hair_color != "None":
+            hsv = cv2.cvtColor(processed, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, np.array([0, 0, 0]), np.array([180, 255, 90]))
+            mask_3d = np.stack([cv2.GaussianBlur(mask, (15,15), 0)]*3, axis=-1) / 255.0
+            
+            shades = {
+                "Brown": [30, 60, 100], 
+                "Golden": [50, 190, 230], 
+                "Red": [40, 40, 200], 
+                "Purple": [130, 0, 130],
+                "Pink": [160, 120, 255]
+            }
+            target = np.array(shades[hair_color], dtype=np.uint8)
+            processed = (processed * (1 - mask_3d * hair_int) + target * (mask_3d * hair_int)).astype(np.uint8)
+
+        # 7. Portrait Blur (AI Background Removal)
+        if mode == "Portrait Blur (AI)" and selfie_seg:
+            rgb_f = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
+            res = selfie_seg.process(rgb_f)
+            if res.segmentation_mask is not None:
+                mask = np.stack((res.segmentation_mask,) * 3, axis=-1) > 0.5
+                blur_bg = cv2.GaussianBlur(processed, (55, 55), 0)
+                # چہرے کو صاف کرنا (Bilateral) اور بیک گراؤنڈ بلر کرنا
+                processed = np.where(mask, cv2.bilateralFilter(processed, 9, 75, 75), blur_bg)
+
+        # --- فائنل رزلٹ ڈسپلے ---
+        st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), caption="HD AI Result", use_container_width=True)
+        
+        # ڈاؤنلوڈ سیکشن
+        final_pil = Image.fromarray(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB))
+        buf = io.BytesIO()
+        final_pil.save(buf, format="JPEG", quality=100)
+        
+        st.download_button("📥 Save HD Photo", buf.getvalue(), "Family_Studio_HD.jpg", "image/jpeg")
+        
+        if st.button("🔒 Logout"):
+            st.session_state.auth = False
+            st.rerun()
+    else:
+        st.info("شروع کرنے کے لیے گیلری سے فوٹو اپلوڈ کریں یا کیمرہ استعمال کریں۔")
