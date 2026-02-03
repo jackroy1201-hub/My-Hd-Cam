@@ -41,8 +41,8 @@ with col2:
     if pic:
         # موازنہ پریویو
         p1, p2 = st.columns(2)
-        with p1: st.image(st.session_state.original, caption="Before (اصل)", use_container_width=True)
-        with p2: st.image(st.session_state.img, caption="After (ایڈیٹ شدہ)", use_container_width=True)
+        with p1: st.image(st.session_state.original, caption="Before (اصل)", use_column_width=True)
+        with p2: st.image(st.session_state.img, caption="After (ایڈیٹ شدہ)", use_column_width=True)
 
         # 4. تمام فیچرز کے ٹیبز
         tabs = st.tabs(["✨ AI میجک", "👔 ڈریس کلر", "💇 ہیئر کلر", "💄 بیوٹی", "🎬 فلٹرز"])
@@ -51,11 +51,22 @@ with col2:
         with tabs[0]:
             if st.button("🚀 اسمارٹ HD نکھار لاگو کریں"):
                 img_np = get_safe_numpy(st.session_state.img)
-                lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
+                
+                # Denoising
+                denoised = cv2.fastNlMeansDenoisingColored(img_np, None, 10, 10, 7, 21)
+                
+                # Contrast Enhancement
+                lab = cv2.cvtColor(denoised, cv2.COLOR_RGB2LAB)
                 l, a, b = cv2.split(lab)
                 cl = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(l)
-                res_np = cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2RGB)
-                st.session_state.img = Image.fromarray(res_np)
+                enhanced_lab = cv2.merge((cl, a, b))
+                enhanced_rgb = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2RGB)
+                
+                # Sharpening
+                kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+                sharpened = cv2.filter2D(enhanced_rgb, -1, kernel)
+                
+                st.session_state.img = Image.fromarray(sharpened)
                 st.rerun()
 
         # --- ڈریس کلر ---
@@ -72,15 +83,22 @@ with col2:
                 st.session_state.img = Image.fromarray(res_np)
                 st.rerun()
 
-        # --- ہیئر کلر ---
+        # --- ہیئر کلر (فکس: threshold کو slider سے کنٹرول کریں تاکہ صرف ہیئر منتخب ہو) ---
         with tabs[2]:
             h_opt = {"جیٹ بلیک": [20,20,20], "سنہرا (Gold)": [190,150,50], "بھورا (Brown)": [100,60,40], "سرخ": [180,40,40]}
             h_choice = st.selectbox("بالوں کا رنگ منتخب کریں", list(h_opt.keys()))
             h_int = st.slider("رنگ کی شدت (Hair)", 0.1, 1.0, 0.4)
+            h_threshold = st.slider("بالوں کی تاریکی کی حد (تاکہ صرف بال تبدیل ہوں)", 30, 100, 65)
             if st.button("💇 ہیئر کلر لاگو کریں"):
                 img_np = get_safe_numpy(st.session_state.img)
                 gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-                mask = cv2.threshold(gray, 65, 255, cv2.THRESH_BINARY_INV)[1]
+                mask = cv2.threshold(gray, h_threshold, 255, cv2.THRESH_BINARY_INV)[1]
+                
+                # ماسک کو بہتر بنانے کے لیے morphological آپریشنز (noise کم کرنے کے لیے)
+                kernel = np.ones((5,5), np.uint8)
+                mask = cv2.erode(mask, kernel, iterations=1)
+                mask = cv2.dilate(mask, kernel, iterations=1)
+                
                 mask_3d = np.stack([cv2.GaussianBlur(mask, (21, 21), 0)/255.0]*3, axis=-1)
                 res_np = (img_np * (1 - mask_3d * h_int) + np.array(h_opt[h_choice]) * (mask_3d * h_int)).astype(np.uint8)
                 st.session_state.img = Image.fromarray(res_np)
@@ -97,7 +115,7 @@ with col2:
                 st.session_state.img = ImageEnhance.Brightness(res).enhance(bright)
                 st.rerun()
 
-        # --- سنیماٹک فلٹرز ---
+        # --- سنیماٹک فلٹرز (نیا فلٹر ایڈ: سوشل میڈیا HD ماڈرن) ---
         with tabs[4]:
             f_col1, f_col2 = st.columns(2)
             with f_col1:
@@ -106,6 +124,14 @@ with col2:
                     st.rerun()
                 if st.button("🌅 سنہری رنگ (Golden Hour)"):
                     st.session_state.img = ImageEnhance.Color(st.session_state.img).enhance(1.6)
+                    st.rerun()
+                if st.button("📱 سوشل میڈیا HD ماڈرن"):
+                    # ماڈرن لک: sharpness, saturation, contrast بڑھائیں
+                    img = st.session_state.img
+                    img = ImageEnhance.Contrast(img).enhance(1.2)  # Contrast
+                    img = ImageEnhance.Color(img).enhance(1.3)     # Saturation
+                    img = ImageEnhance.Sharpness(img).enhance(1.5) # Sharpness
+                    st.session_state.img = img
                     st.rerun()
             with f_col2:
                 if st.button("🌈 شوخ رنگ (Vivid)"):
