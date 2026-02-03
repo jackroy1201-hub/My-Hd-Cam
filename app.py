@@ -2,14 +2,16 @@ import streamlit as st
 import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
- militant io, tempfile, os
+import io
+import tempfile
+import os
 from moviepy.editor import VideoFileClip
 
 # ---------------- UI Settings ----------------
 
 st.set_page_config(page_title="Roman Studio Pro", layout="wide", page_icon="🎨")
 
-# Custom CSS for Roman Studio Look
+# Roman Studio Custom Styling
 st.markdown("""
 <style>
 .main-header {
@@ -53,7 +55,6 @@ with st.sidebar:
 
 # ---------------- Main Tabs ----------------
 
-# ہم نے ٹیبز کو باہر نکال لیا ہے تاکہ ویڈیو آپشن ہمیشہ نظر آئے
 tabs = st.tabs(["📸 Photo Editor", "🎥 Video Editor"])
 
 # ================= TAB 1: PHOTO EDITOR =================
@@ -71,11 +72,10 @@ with tabs[0]:
 
     if pic:
         with col2:
-            c1, c2 = st.columns(2)
-            c1.image(st.session_state.org, caption="Original", use_container_width=True)
-            c2.image(st.session_state.img, caption="Edited HD", use_container_width=True)
+            c_orig, c_edit = st.columns(2)
+            c_orig.image(st.session_state.org, caption="Original", use_container_width=True)
+            c_edit.image(st.session_state.img, caption="Edited HD", use_container_width=True)
 
-        # Photo Tools inside sub-tabs
         p_tabs = st.tabs(["✨ AI Magic", "💄 Beauty", "🎬 Social/Pro"])
         
         with p_tabs[0]:
@@ -99,65 +99,68 @@ with tabs[0]:
                 st.session_state.img = img
                 st.rerun()
 
-        # Download Photo
+        st.markdown("---")
         buf = io.BytesIO()
         st.session_state.img.save(buf, "JPEG", quality=quality)
         st.download_button("📥 Download HD Photo", buf.getvalue(), "Roman_Studio_HD.jpg")
+        
         if st.button("🔄 Reset Photo"):
             st.session_state.img = st.session_state.org
             st.rerun()
     else:
-        st.info("Please upload a photo to see editing options.")
+        st.info("تصویر اپلوڈ کریں تاکہ ایڈیٹنگ ٹولز نظر آئیں۔")
 
 # ================= TAB 2: VIDEO EDITOR =================
 
 with tabs[1]:
-    st.subheader("📱 TikTok Full HD + Beauty + Voice Safe")
+    st.subheader("📱 TikTok Full HD + Beauty")
     video_file = st.file_uploader("Upload Video", ["mp4", "mov", "avi"], key="video_up")
 
     if video_file:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
+        # Save uploaded video to a temporary file
+        tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         tfile.write(video_file.read())
+        tfile.close()
         
-        v_col1, v_col2 = st.columns(2)
-        
-        with v_col1:
-            if st.button("✨ TikTok Beauty HD (Keep Voice)"):
-                with st.spinner("Processing Video... Please wait"):
+        if st.button("✨ Start AI Processing (Keep Voice)"):
+            with st.spinner("Processing Video... اس میں تھوڑا وقت لگ سکتا ہے"):
+                try:
                     cap = cv2.VideoCapture(tfile.name)
                     fps = cap.get(cv2.CAP_PROP_FPS)
-                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     
-                    temp_v = "temp_proc.mp4"
-                    out = cv2.VideoWriter(temp_v, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+                    temp_proc = "temp_output.mp4"
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(temp_proc, fourcc, fps, (w, h))
 
                     while cap.isOpened():
                         ret, frame = cap.read()
                         if not ret: break
-                        # Applying Beauty Filter to each frame
-                        frame = cv2.bilateralFilter(frame, 5, 30, 30)
-                        out.write(frame)
+                        # Apply subtle beauty filter
+                        proc_frame = cv2.bilateralFilter(frame, 5, 30, 30)
+                        out.write(proc_frame)
                     
                     cap.release()
                     out.release()
 
-                    # Merge Audio
-                    orig_clip = VideoFileClip(tfile.name)
-                    processed_clip = VideoFileClip(temp_v)
-                    final_clip = processed_clip.set_audio(orig_clip.audio)
-                    final_path = "Roman_Studio_TikTok_HD.mp4"
-                    final_clip.write_videofile(final_path, codec="libx264", audio_codec="aac")
+                    # Merge Audio back using MoviePy
+                    video_clip = VideoFileClip(temp_proc)
+                    original_clip = VideoFileClip(tfile.name)
+                    final_clip = video_clip.set_audio(original_clip.audio)
                     
-                    st.success("Video Ready!")
-                    st.video(final_path)
-                    with open(final_path, "rb") as f:
-                        st.download_button("📥 Download Processed Video", f, "Roman_Studio_Video.mp4")
-
-        with v_col2:
-            st.write("Video Details:")
-            st.write(f"Format: {video_file.type}")
-            st.write("Ready for AI Enhancement")
+                    output_name = "Roman_Studio_Video_HD.mp4"
+                    final_clip.write_videofile(output_name, codec="libx264", audio_codec="aac")
+                    
+                    st.success("پروسیسنگ مکمل ہوگئی!")
+                    st.video(output_name)
+                    with open(output_name, "rb") as f:
+                        st.download_button("📥 ڈاؤن لوڈ ویڈیو", f, "Roman_HD_Video.mp4")
+                
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                finally:
+                    if os.path.exists(tfile.name): os.remove(tfile.name)
 
 # ---------------- Footer ----------------
 st.markdown("---")
