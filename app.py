@@ -26,10 +26,87 @@ def apply_sharpness(pil_img, factor=1.5):
     enhancer = ImageEnhance.Sharpness(pil_img)
     return enhancer.enhance(factor)
 
+# نئی: بہتر HDR فنکشن
+def apply_hdr_effect(pil_img, intensity=0.6, saturation=1.3, brightness=1.1):
+    """
+    قدرتی HDR ایفیکٹ کے لیے بہتر فنکشن
+    """
+    img_np = get_safe_numpy(pil_img)
+    
+    # Tone Mapping کا بہتر طریقہ
+    # پہلا: Mild detail enhancement
+    detail = cv2.detailEnhance(img_np, sigma_s=8, sigma_r=0.12)
+    
+    # دوسرا: Color vibrancy
+    hsv = cv2.cvtColor(detail, cv2.COLOR_RGB2HSV).astype(np.float32)
+    hsv[..., 1] = np.clip(hsv[..., 1] * saturation, 0, 255)  # Saturation
+    hsv[..., 2] = np.clip(hsv[..., 2] * brightness, 0, 255)  # Brightness
+    vibrant = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+    
+    # تیسرا: Blend original with enhanced version
+    result = cv2.addWeighted(img_np, 1 - intensity, vibrant, intensity, 0)
+    
+    # چوتھا: Subtle sharpening
+    kernel = np.array([[-1, -1, -1],
+                       [-1,  9, -1],
+                       [-1, -1, -1]])
+    result = cv2.filter2D(result, -1, kernel * 0.3 + np.eye(3) * 0.7)
+    
+    return Image.fromarray(result)
+
+# نئی: AI-Powered HDR (انتہائی جدید)
+def apply_ai_hdr(pil_img):
+    """
+    AI سے موازنہ شدہ HDR ایفیکٹ
+    """
+    img_np = get_safe_numpy(pil_img)
+    
+    # Multiple exposures کی simulation
+    exposures = []
+    for gamma in [0.8, 1.0, 1.2]:
+        corrected = np.power(img_np.astype(np.float32) / 255.0, gamma) * 255.0
+        exposures.append(corrected.astype(np.uint8))
+    
+    # Merge exposures (simple averaging with weights)
+    merged = np.zeros_like(img_np, dtype=np.float32)
+    weights = [0.3, 0.4, 0.3]  # Middle exposure gets most weight
+    for exp, w in zip(exposures, weights):
+        merged += exp.astype(np.float32) * w
+    
+    merged = np.clip(merged, 0, 255).astype(np.uint8)
+    
+    # Local contrast enhancement
+    lab = cv2.cvtColor(merged, cv2.COLOR_RGB2LAB)
+    l, a, b = cv2.split(lab)
+    
+    # CLAHE for better local contrast
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    l = clahe.apply(l)
+    
+    merged_lab = cv2.merge([l, a, b])
+    result = cv2.cvtColor(merged_lab, cv2.COLOR_LAB2RGB)
+    
+    # Final color adjustment
+    result = cv2.convertScaleAbs(result, alpha=1.1, beta=10)
+    
+    return Image.fromarray(result)
+
 # 3. سائیڈ بار
 with st.sidebar:
     st.title("⚙️ کنٹرول پینل")
     quality_slider = st.slider("ایکسپورٹ کوالٹی (HD)", 80, 100, 100)
+    
+    # HDR سیٹنگز کے لیے نئے کنٹرولز
+    st.markdown("---")
+    st.subheader("🎛️ HDR سیٹنگز")
+    hdr_mode = st.selectbox(
+        "HDR Mode",
+        ["فطری (Natural)", "متوازن (Balanced)", "ڈرامائی (Dramatic)"],
+        index=1
+    )
+    
+    hdr_intensity = st.slider("HDR شدت", 0.1, 1.0, 0.6, 0.1)
+    
     st.markdown("---")
     st.write("✅ تمام فیچرز ایکٹیو ہیں")
     st.write("✅ کوالٹی پروٹیکشن آن ہے")
@@ -57,18 +134,69 @@ with col2:
 
         # --- AI میجک (HDR + Sharpness) ---
         with tabs[0]:
-            if st.button("🚀 الٹرا HD نکھار (Ultra HD)"):
-                img_np = get_safe_numpy(st.session_state.img)
-                # Detail Enhancement
-                dst = cv2.detailEnhance(img_np, sigma_s=12, sigma_r=0.15)
-                res = Image.fromarray(dst)
-                st.session_state.img = apply_sharpness(res)
-                st.rerun()
-            if st.button("🌟 HDR Mode"):
-                img_np = get_safe_numpy(st.session_state.img)
-                res_np = cv2.detailEnhance(img_np, sigma_s=20, sigma_r=0.20)
-                st.session_state.img = Image.fromarray(res_np)
-                st.rerun()
+            col_a1, col_a2 = st.columns(2)
+            
+            with col_a1:
+                if st.button("🚀 الٹرا HD نکھار (Ultra HD)"):
+                    img_np = get_safe_numpy(st.session_state.img)
+                    # Detail Enhancement with moderate settings
+                    dst = cv2.detailEnhance(img_np, sigma_s=10, sigma_r=0.12)
+                    res = Image.fromarray(dst)
+                    st.session_state.img = apply_sharpness(res, factor=1.3)
+                    st.rerun()
+                
+                # نئی: بہتر HDR Mode
+                if st.button("🌟 HDR Mode (بہتر)"):
+                    if hdr_mode == "فطری (Natural)":
+                        # سب سے ہلکا ایفیکٹ
+                        result = apply_hdr_effect(
+                            st.session_state.img, 
+                            intensity=0.4,
+                            saturation=1.2,
+                            brightness=1.05
+                        )
+                    elif hdr_mode == "متوازن (Balanced)":
+                        # متوازن ایفیکٹ
+                        result = apply_hdr_effect(
+                            st.session_state.img,
+                            intensity=hdr_intensity,
+                            saturation=1.3,
+                            brightness=1.1
+                        )
+                    else:  # ڈرامائی
+                        # زیادہ وائبرنٹ ایفیکٹ
+                        result = apply_hdr_effect(
+                            st.session_state.img,
+                            intensity=0.8,
+                            saturation=1.5,
+                            brightness=1.15
+                        )
+                    st.session_state.img = result
+                    st.rerun()
+            
+            with col_a2:
+                if st.button("🤖 AI HDR (جدید)"):
+                    st.session_state.img = apply_ai_hdr(st.session_state.img)
+                    st.rerun()
+                
+                if st.button("🌈 Color Pop HDR"):
+                    img_np = get_safe_numpy(st.session_state.img)
+                    # Vibrant HDR effect
+                    lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
+                    l, a, b = cv2.split(lab)
+                    
+                    # Enhance colors
+                    a = cv2.convertScaleAbs(a, alpha=1.2, beta=0)
+                    b = cv2.convertScaleAbs(b, alpha=1.2, beta=0)
+                    
+                    merged_lab = cv2.merge([l, a, b])
+                    result = cv2.cvtColor(merged_lab, cv2.COLOR_LAB2RGB)
+                    
+                    # Mild detail enhancement
+                    result = cv2.detailEnhance(result, sigma_s=6, sigma_r=0.08)
+                    
+                    st.session_state.img = Image.fromarray(result)
+                    st.rerun()
 
         # --- بیوٹی ٹچ اپ ---
         with tabs[1]:
