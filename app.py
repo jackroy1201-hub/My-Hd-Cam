@@ -1,298 +1,277 @@
 import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
-import io
+from PIL import Image, ImageEnhance, ImageOps
+import io, tempfile, os
+from moviepy.editor import VideoFileClip
 
-# 1. پیج سیٹنگ اور اسٹائلنگ
-st.set_page_config(page_title="Roman Studio Pro", layout="wide", page_icon="🎨")
+# ---------------- UI ----------------
+
+st.set_page_config("Roman Studio Pro", layout="wide", page_icon="🎨")
 
 st.markdown("""
 <style>
-    .main-header { text-align: center; padding: 1.5rem; background: linear-gradient(135deg, #1e3c72, #2a5298); border-radius: 15px; color: white; margin-bottom: 20px; }
-    .stButton>button { width:100%; border-radius:12px; font-weight:bold; height: 3.5em; transition: 0.3s; margin-bottom: 5px; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] { font-size: 14px; font-weight: 600; }
+.main-header{padding:1.5rem;text-align:center;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+color:white;border-radius:15px;margin-bottom:20px}
+.stButton>button{width:100%;border-radius:12px;font-weight:bold;height:3.2em}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header"><h1>🎨 Roman Studio Pro</h1><p>الٹرا ایچ ڈی سوشل میڈیا ایڈیٹنگ اسٹوڈیو</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header"><h1>🎨 Roman Studio Pro</h1><p>Full HD & 4K AI Photo + Video Studio</p></div>', unsafe_allow_html=True)
 
-# 2. سیفٹی اور کوالٹی فنکشنز
-def get_safe_numpy(pil_img):
-    return np.array(pil_img.convert("RGB"))
+# ---------------- Utils ----------------
 
-def apply_sharpness(pil_img, factor=1.5):
-    enhancer = ImageEnhance.Sharpness(pil_img)
-    return enhancer.enhance(factor)
+def to_np(img): 
+    return np.array(img.convert("RGB"))
 
-# نئی: بہتر HDR فنکشن
-def apply_hdr_effect(pil_img, intensity=0.6, saturation=1.3, brightness=1.1):
-    """
-    قدرتی HDR ایفیکٹ کے لیے بہتر فنکشن
-    """
-    img_np = get_safe_numpy(pil_img)
-    
-    # Tone Mapping کا بہتر طریقہ
-    # پہلا: Mild detail enhancement
-    detail = cv2.detailEnhance(img_np, sigma_s=8, sigma_r=0.12)
-    
-    # دوسرا: Color vibrancy
-    hsv = cv2.cvtColor(detail, cv2.COLOR_RGB2HSV).astype(np.float32)
-    hsv[..., 1] = np.clip(hsv[..., 1] * saturation, 0, 255)  # Saturation
-    hsv[..., 2] = np.clip(hsv[..., 2] * brightness, 0, 255)  # Brightness
-    vibrant = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
-    
-    # تیسرا: Blend original with enhanced version
-    result = cv2.addWeighted(img_np, 1 - intensity, vibrant, intensity, 0)
-    
-    # چوتھا: Subtle sharpening
-    kernel = np.array([[-1, -1, -1],
-                       [-1,  9, -1],
-                       [-1, -1, -1]])
-    result = cv2.filter2D(result, -1, kernel * 0.3 + np.eye(3) * 0.7)
-    
-    return Image.fromarray(result)
+def natural_sharp(img):
+    n = to_np(img)
+    blur = cv2.GaussianBlur(n,(0,0),1.1)
+    sharp = cv2.addWeighted(n,1.12,blur,-0.12,0)
+    return Image.fromarray(np.clip(sharp,0,255).astype(np.uint8))
 
-# نئی: AI-Powered HDR (انتہائی جدید)
-def apply_ai_hdr(pil_img):
-    """
-    AI سے موازنہ شدہ HDR ایفیکٹ
-    """
-    img_np = get_safe_numpy(pil_img)
-    
-    # Multiple exposures کی simulation
-    exposures = []
-    for gamma in [0.8, 1.0, 1.2]:
-        corrected = np.power(img_np.astype(np.float32) / 255.0, gamma) * 255.0
-        exposures.append(corrected.astype(np.uint8))
-    
-    # Merge exposures (simple averaging with weights)
-    merged = np.zeros_like(img_np, dtype=np.float32)
-    weights = [0.3, 0.4, 0.3]  # Middle exposure gets most weight
-    for exp, w in zip(exposures, weights):
-        merged += exp.astype(np.float32) * w
-    
-    merged = np.clip(merged, 0, 255).astype(np.uint8)
-    
-    # Local contrast enhancement
-    lab = cv2.cvtColor(merged, cv2.COLOR_RGB2LAB)
-    l, a, b = cv2.split(lab)
-    
-    # CLAHE for better local contrast
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-    l = clahe.apply(l)
-    
-    merged_lab = cv2.merge([l, a, b])
-    result = cv2.cvtColor(merged_lab, cv2.COLOR_LAB2RGB)
-    
-    # Final color adjustment
-    result = cv2.convertScaleAbs(result, alpha=1.1, beta=10)
-    
-    return Image.fromarray(result)
+def clean_hd(img):
+    n = to_np(img)
+    den = cv2.fastNlMeansDenoisingColored(n,None,6,6,7,21)
+    blur = cv2.GaussianBlur(den,(0,0),1)
+    hd = cv2.addWeighted(den,1.1,blur,-0.1,0)
+    return Image.fromarray(hd)
 
-# 3. سائیڈ بار
+def natural_hdr(img):
+    n = to_np(img)
+    det = cv2.detailEnhance(n, sigma_s=6, sigma_r=0.08)
+    blend = cv2.addWeighted(n,0.6,det,0.4,0)
+    return Image.fromarray(blend)
+
+# ---------------- Sidebar ----------------
+
 with st.sidebar:
-    st.title("⚙️ کنٹرول پینل")
-    quality_slider = st.slider("ایکسپورٹ کوالٹی (HD)", 80, 100, 100)
-    
-    # HDR سیٹنگز کے لیے نئے کنٹرولز
-    st.markdown("---")
-    st.subheader("🎛️ HDR سیٹنگز")
-    hdr_mode = st.selectbox(
-        "HDR Mode",
-        ["فطری (Natural)", "متوازن (Balanced)", "ڈرامائی (Dramatic)"],
-        index=1
-    )
-    
-    hdr_intensity = st.slider("HDR شدت", 0.1, 1.0, 0.6, 0.1)
-    
-    st.markdown("---")
-    st.write("✅ تمام فیچرز ایکٹیو ہیں")
-    st.write("✅ کوالٹی پروٹیکشن آن ہے")
+    st.title("⚙️ Control Panel")
+    quality = st.slider("Export HD Quality",80,100,100)
+    st.success("All Systems Active")
 
-col1, col2 = st.columns([1, 2])
+# ---------------- Upload ----------------
+
+col1,col2 = st.columns([1,2])
 
 with col1:
-    pic = st.file_uploader("تصویر یہاں اپلوڈ کریں", type=["jpg", "png", "jpeg", "webp"])
+    pic = st.file_uploader("Upload Image",["jpg","png","jpeg","webp"])
     if pic:
-        original = Image.open(pic).convert("RGB")
+        img = Image.open(pic).convert("RGB")
         if "img" not in st.session_state:
-            st.session_state.img = original
-            st.session_state.original = original
-        st.info("💡 آپ کی تصویر Roman Studio میں محفوظ ہے۔")
+            st.session_state.img = img
+            st.session_state.org = img
 
 with col2:
     if pic:
-        # موازنہ پریویو (موبائل فرینڈلی)
-        p1, p2 = st.columns(2)
-        with p1: st.image(st.session_state.original, caption="اصل تصویر", use_container_width=True)
-        with p2: st.image(st.session_state.img, caption="ایڈیٹ شدہ (HD)", use_container_width=True)
+        c1,c2 = st.columns(2)
+        c1.image(st.session_state.org,caption="Original",use_container_width=True)
+        c2.image(st.session_state.img,caption="Edited HD",use_container_width=True)
 
-        # 4. تمام فیچرز کے ٹیبز (Old + New)
-        tabs = st.tabs(["✨ AI میجک", "💄 بیوٹی & نکھار", "👔 ڈریس & ہیئر", "🎬 سوشل میڈیا", "🎞️ پروفیشنل"])
+# ================= PHOTO EDITOR =================
 
-        # --- AI میجک (HDR + Sharpness) ---
-        with tabs[0]:
-            col_a1, col_a2 = st.columns(2)
-            
-            with col_a1:
-                if st.button("🚀 الٹرا HD نکھار (Ultra HD)"):
-                    img_np = get_safe_numpy(st.session_state.img)
-                    # Detail Enhancement with moderate settings
-                    dst = cv2.detailEnhance(img_np, sigma_s=10, sigma_r=0.12)
-                    res = Image.fromarray(dst)
-                    st.session_state.img = apply_sharpness(res, factor=1.3)
-                    st.rerun()
-                
-                # نئی: بہتر HDR Mode
-                if st.button("🌟 HDR Mode (بہتر)"):
-                    if hdr_mode == "فطری (Natural)":
-                        # سب سے ہلکا ایفیکٹ
-                        result = apply_hdr_effect(
-                            st.session_state.img, 
-                            intensity=0.4,
-                            saturation=1.2,
-                            brightness=1.05
-                        )
-                    elif hdr_mode == "متوازن (Balanced)":
-                        # متوازن ایفیکٹ
-                        result = apply_hdr_effect(
-                            st.session_state.img,
-                            intensity=hdr_intensity,
-                            saturation=1.3,
-                            brightness=1.1
-                        )
-                    else:  # ڈرامائی
-                        # زیادہ وائبرنٹ ایفیکٹ
-                        result = apply_hdr_effect(
-                            st.session_state.img,
-                            intensity=0.8,
-                            saturation=1.5,
-                            brightness=1.15
-                        )
-                    st.session_state.img = result
-                    st.rerun()
-            
-            with col_a2:
-                if st.button("🤖 AI HDR (جدید)"):
-                    st.session_state.img = apply_ai_hdr(st.session_state.img)
-                    st.rerun()
-                
-                if st.button("🌈 Color Pop HDR"):
-                    img_np = get_safe_numpy(st.session_state.img)
-                    # Vibrant HDR effect
-                    lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
-                    l, a, b = cv2.split(lab)
-                    
-                    # Enhance colors
-                    a = cv2.convertScaleAbs(a, alpha=1.2, beta=0)
-                    b = cv2.convertScaleAbs(b, alpha=1.2, beta=0)
-                    
-                    merged_lab = cv2.merge([l, a, b])
-                    result = cv2.cvtColor(merged_lab, cv2.COLOR_LAB2RGB)
-                    
-                    # Mild detail enhancement
-                    result = cv2.detailEnhance(result, sigma_s=6, sigma_r=0.08)
-                    
-                    st.session_state.img = Image.fromarray(result)
-                    st.rerun()
+if pic:
 
-        # --- بیوٹی ٹچ اپ ---
-        with tabs[1]:
-            smooth = st.slider("جلد کی صفائی (Smoothing)", 0, 25, 10)
-            bright = st.slider("چہرے کی چمک (Brightness)", 0.5, 2.0, 1.0)
-            if st.button("💄 بیوٹی ٹچ اپ لاگو کریں"):
-                img_np = get_safe_numpy(st.session_state.img)
-                clean_np = cv2.bilateralFilter(img_np, smooth, 75, 75)
-                res = Image.fromarray(clean_np)
-                st.session_state.img = ImageEnhance.Brightness(res).enhance(bright)
-                st.rerun()
+    tabs = st.tabs(["✨ AI Magic","💄 Beauty","👔 Hair","🎬 Social","🎞 Pro","🌿 Natural HD Pro","🎥 Video Editor"])
 
-        # --- ڈریس اور ہیئر کلر ---
-        with tabs[2]:
-            c_d, c_h = st.columns(2)
-            with c_d:
-                d_color = st.color_picker("کپڑوں کا رنگ", "#3498db")
-                if st.button("👔 ڈریس کلر بدلیں"):
-                    rgb = tuple(int(d_color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-                    img_np = get_safe_numpy(st.session_state.img)
-                    hsv = cv2.cvtColor(img_np, cv2.COLOR_RGB2HSV)
-                    mask = cv2.inRange(hsv, np.array([0, 0, 40]), np.array([180, 255, 255]))
-                    mask_3d = np.stack([cv2.GaussianBlur(mask, (15, 15), 0)/255.0]*3, axis=-1)
-                    res_np = (img_np * (1 - mask_3d * 0.45) + np.array(rgb) * (mask_3d * 0.45)).astype(np.uint8)
-                    st.session_state.img = Image.fromarray(res_np)
-                    st.rerun()
-            with c_h:
-                h_opt = {"Black": [20,20,20], "Gold": [190,150,50], "Brown": [100,60,40]}
-                choice = st.selectbox("بالوں کا رنگ", list(h_opt.keys()))
-                if st.button("💇 ہیئر کلر بدلیں"):
-                    img_np = get_safe_numpy(st.session_state.img)
-                    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-                    mask = cv2.threshold(gray, 65, 255, cv2.THRESH_BINARY_INV)[1]
-                    mask_3d = np.stack([cv2.GaussianBlur(mask, (21,21), 0)/255.0]*3, axis=-1)
-                    res_np = (img_np * (1 - mask_3d * 0.4) + np.array(h_opt[choice]) * (mask_3d * 0.4)).astype(np.uint8)
-                    st.session_state.img = Image.fromarray(res_np)
-                    st.rerun()
+    # ---- AI MAGIC ----
 
-        # --- سوشل میڈیا فلٹرز (New Buttons) ---
-        with tabs[3]:
-            s1, s2 = st.columns(2)
-            with s1:
-                if st.button("📱 iPhone Cam"):
-                    img = st.session_state.img
-                    img = ImageEnhance.Color(img).enhance(1.15)
-                    img = ImageEnhance.Sharpness(img).enhance(1.6)
-                    st.session_state.img = ImageEnhance.Contrast(img).enhance(1.08)
-                    st.rerun()
-                if st.button("✨ TikTok Glow"):
-                    img_np = get_safe_numpy(st.session_state.img)
-                    glow = cv2.GaussianBlur(img_np, (25, 25), 0)
-                    st.session_state.img = Image.fromarray(cv2.addWeighted(img_np, 0.75, glow, 0.25, 0))
-                    st.rerun()
-                if st.button("📸 Snapchat Filter"):
-                    img = st.session_state.img
-                    img = ImageEnhance.Brightness(img).enhance(1.1)
-                    st.session_state.img = ImageEnhance.Color(img).enhance(1.25)
-                    st.rerun()
-            with s2:
-                if st.button("📸 Insta Filter"):
-                    img = st.session_state.img
-                    img = ImageEnhance.Contrast(img).enhance(1.2)
-                    st.session_state.img = ImageEnhance.Color(img).enhance(1.3)
-                    st.rerun()
-                if st.button("🎭 Dramatic"):
-                    img = st.session_state.img
-                    st.session_state.img = ImageEnhance.Contrast(img).enhance(1.6)
-                    st.rerun()
-                if st.button("🎬 Cinema Mode"):
-                    img_np = get_safe_numpy(st.session_state.img).astype(float)
-                    img_np[:,:,0] *= 0.85 # Teal effect
-                    img_np[:,:,2] *= 1.1 # Orange/Warm effect
-                    st.session_state.img = Image.fromarray(np.clip(img_np, 0, 255).astype(np.uint8))
-                    st.rerun()
+    with tabs[0]:
 
-        # --- پروفیشنل اور کلاسک ---
-        with tabs[4]:
-            if st.button("🖤 کلاسک Noir (B&W)"):
-                st.session_state.img = ImageOps.grayscale(st.session_state.img)
-                st.rerun()
-            if st.button("🌅 Golden Hour"):
-                st.session_state.img = ImageEnhance.Color(st.session_state.img).enhance(1.7)
-                st.rerun()
+        if st.button("💎 Full HD Clean Boost"):
+            st.session_state.img = clean_hd(st.session_state.img)
+            st.rerun()
 
-        # 5. ڈاؤنلوڈ اور ری سیٹ (High Quality)
-        st.markdown("---")
-        d1, d2 = st.columns(2)
-        with d1:
-            # سیونگ کے وقت کوالٹی کو بہترین بنانا
-            final_img = st.session_state.img
-            buf = io.BytesIO()
-            final_img.save(buf, format="JPEG", quality=quality_slider, subsampling=0)
-            st.download_button("📥 ایچ ڈی تصویر محفوظ کریں", buf.getvalue(), "Roman_Studio_Final.jpg", "image/jpeg")
-        with d2:
-            if st.button("🔄 تصویر اصل حالت میں لائیں"):
-                st.session_state.img = st.session_state.original
-                st.rerun()
+        if st.button("📷 Natural DSLR Sharp"):
+            st.session_state.img = natural_sharp(st.session_state.img)
+            st.rerun()
 
-st.markdown("<center><p style='color:gray;'>Roman Studio Pro - 2026<br>All Features Active: HD, Social, Beauty & More</p></center>", unsafe_allow_html=True)
+        if st.button("🌟 Natural HDR"):
+            st.session_state.img = natural_hdr(st.session_state.img)
+            st.rerun()
+
+    # ---- BEAUTY ----
+
+    with tabs[1]:
+
+        smooth = st.slider("Skin Smooth",3,20,8)
+        bright = st.slider("Brightness",0.8,1.5,1.05)
+
+        if st.button("💄 Apply Natural Beauty"):
+            n = to_np(st.session_state.img)
+            clean = cv2.bilateralFilter(n,smooth,40,40)
+            img2 = Image.fromarray(clean)
+            img2 = ImageEnhance.Brightness(img2).enhance(bright)
+            st.session_state.img = img2
+            st.rerun()
+
+    # ---- HAIR ----
+
+    with tabs[2]:
+
+        hair_colors={
+            "Black":[20,20,20],
+            "Brown":[110,70,40],
+            "Golden":[190,150,60]
+        }
+
+        h=st.selectbox("Hair Color",hair_colors)
+
+        if st.button("💇 Apply Hair Color"):
+            n=to_np(st.session_state.img)
+            gray=cv2.cvtColor(n,cv2.COLOR_RGB2GRAY)
+            mask=cv2.threshold(gray,70,255,cv2.THRESH_BINARY_INV)[1]
+            mask=cv2.GaussianBlur(mask,(21,21),0)/255
+            res=(n*(1-mask[:,:,None]*0.4)+np.array(hair_colors[h])*(mask[:,:,None]*0.4)).astype(np.uint8)
+            st.session_state.img=Image.fromarray(res)
+            st.rerun()
+
+    # ---- SOCIAL ----
+
+    with tabs[3]:
+
+        if st.button("📱 iPhone Look"):
+            img=st.session_state.img
+            img=ImageEnhance.Color(img).enhance(1.1)
+            img=ImageEnhance.Sharpness(img).enhance(1.3)
+            st.session_state.img=img
+            st.rerun()
+
+        if st.button("✨ TikTok Glow"):
+            n=to_np(st.session_state.img)
+            glow=cv2.GaussianBlur(n,(25,25),0)
+            st.session_state.img=Image.fromarray(cv2.addWeighted(n,0.8,glow,0.2,0))
+            st.rerun()
+
+    # ---- PRO ----
+
+    with tabs[4]:
+
+        if st.button("🖤 Classic B&W"):
+            st.session_state.img=ImageOps.grayscale(st.session_state.img)
+            st.rerun()
+
+        if st.button("🌅 Golden Hour"):
+            st.session_state.img=ImageEnhance.Color(st.session_state.img).enhance(1.4)
+            st.rerun()
+
+    # ---- NATURAL HD ----
+
+    with tabs[5]:
+
+        if st.button("🌿 Clean Camera Look"):
+            n=to_np(st.session_state.img)
+            soft=cv2.bilateralFilter(n,5,35,35)
+            st.session_state.img=Image.fromarray(soft)
+            st.rerun()
+
+        if st.button("✨ Natural Glow"):
+            img=st.session_state.img
+            img=ImageEnhance.Brightness(img).enhance(1.03)
+            img=ImageEnhance.Sharpness(img).enhance(1.05)
+            st.session_state.img=img
+            st.rerun()
+
+    # ================= VIDEO EDITOR =================
+
+    with tabs[6]:
+
+        st.subheader("📱 TikTok Full HD + Beauty + Voice Safe")
+
+        video = st.file_uploader("Upload Video",["mp4","mov","avi"])
+
+        if video:
+
+            temp = tempfile.NamedTemporaryFile(delete=False)
+            temp.write(video.read())
+
+            # ---- TikTok HD Beauty ----
+
+            if st.button("✨ TikTok Beauty HD (Keep Voice)"):
+
+                cap=cv2.VideoCapture(temp.name)
+                fps=cap.get(cv2.CAP_PROP_FPS)
+
+                temp_video="temp_video.mp4"
+                final="TikTok_Beauty_HD.mp4"
+
+                out=cv2.VideoWriter(
+                    temp_video,
+                    cv2.VideoWriter_fourcc(*"mp4v"),
+                    fps,
+                    (1080,1920)
+                )
+
+                while True:
+                    ret,frame=cap.read()
+                    if not ret: break
+
+                    frame=cv2.resize(frame,(1080,1920))
+                    smooth=cv2.bilateralFilter(frame,7,40,40)
+                    glow=cv2.GaussianBlur(smooth,(25,25),0)
+                    beauty=cv2.addWeighted(smooth,0.85,glow,0.15,0)
+                    beauty=cv2.convertScaleAbs(beauty,1.05,6)
+
+                    out.write(beauty)
+
+                cap.release()
+                out.release()
+
+                orig=VideoFileClip(temp.name)
+                new=VideoFileClip(temp_video)
+
+                final_clip=new.set_audio(orig.audio)
+                final_clip.write_videofile(final,codec="libx264",audio_codec="aac",verbose=False,logger=None)
+
+                st.download_button("📥 Download TikTok Beauty HD",open(final,"rb"),"TikTok_Beauty_HD.mp4")
+
+            # ---- 4K DSLR ----
+
+            if st.button("🎬 Convert to 4K DSLR HD"):
+
+                cap=cv2.VideoCapture(temp.name)
+                fps=cap.get(cv2.CAP_PROP_FPS)
+
+                out_path="Roman_4K_DSLR.mp4"
+
+                out=cv2.VideoWriter(
+                    out_path,
+                    cv2.VideoWriter_fourcc(*"mp4v"),
+                    fps,
+                    (3840,2160)
+                )
+
+                while True:
+                    ret,frame=cap.read()
+                    if not ret: break
+
+                    frame=cv2.resize(frame,(3840,2160),interpolation=cv2.INTER_CUBIC)
+                    frame=cv2.detailEnhance(frame,5,0.07)
+
+                    blur=cv2.GaussianBlur(frame,(0,0),1)
+                    frame=cv2.addWeighted(frame,1.08,blur,-0.08,0)
+
+                    out.write(frame)
+
+                cap.release()
+                out.release()
+
+                st.download_button("📥 Download 4K DSLR Video",open(out_path,"rb"),"Roman_4K_DSLR.mp4")
+
+    # ---------------- Download Image ----------------
+
+    st.markdown("---")
+    b1,b2=st.columns(2)
+
+    with b1:
+        buf=io.BytesIO()
+        st.session_state.img.save(buf,"JPEG",quality=quality,subsampling=0)
+        st.download_button("📥 Download HD Photo",buf.getvalue(),"Roman_HD.jpg")
+
+    with b2:
+        if st.button("🔄 Reset Original"):
+            st.session_state.img=st.session_state.org
+            st.rerun()
+
+st.markdown("<center><p style='color:gray;'>Roman Studio Pro 2026 – All AI Systems Active</p></center>",unsafe_allow_html=True)
