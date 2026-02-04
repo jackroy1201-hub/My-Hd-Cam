@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roman Studio Clock</title>
+    <style>
+        body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        
+        /* گھڑی اسکرین */
+        #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top:0; left:0; z-index: 999; background: #000; }
+        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: #050505; box-shadow: 0 0 20px rgba(52,152,219,0.2); }
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 10px; }
+        .hour { width: 6px; height: 50px; background: white; z-index: 3; }
+        .minute { width: 4px; height: 80px; background: #888; z-index: 2; }
+        .second { width: 2px; height: 95px; background: #e74c3c; z-index: 1; }
+        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; animation: blink 2s infinite; font-weight: bold; letter-spacing: 1px; }
+        @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+        /* پن کوڈ اسکرین */
+        #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: #000; position: fixed; top:0; z-index: 1000; padding-top: 25vh; }
+        input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
+
+        /* مانیٹرنگ پینل */
+        #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
+        video { width: 100%; max-width: 320px; border-radius: 15px; background: #111; margin: 0 auto 15px; display: block; border: 2px solid #222; }
+        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 6px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; font-size: 14px; display: block; text-transform: uppercase; }
+        .btn-blue { background: #3498db; }
+        .btn-green { background: #2ecc71; }
+        .btn-orange { background: #f39c12; }
+        .btn-red { background: #e74c3c; }
+        .btn-grey { background: #555; }
+
+        /* گیلری */
+        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; padding-bottom: 50px; }
+        .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; position: relative; }
+        .card img, .card video { width: 100%; border-radius: 8px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+    <div id="clock-screen" onclick="openPin()">
+        <div class="clock">
+            <div id="hour" class="hand hour"></div>
+            <div id="min" class="hand minute"></div>
+            <div id="sec" class="hand second"></div>
+        </div>
+        <div class="roman-text">ROMAN STUDIO</div>
+    </div>
+
+    <div id="pin-screen">
+        <h3 style="color:#3498db; margin-bottom:20px;">Private Entry</h3>
+        <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
+        <p onclick="location.reload()" style="color:#666; margin-top:40px; cursor:pointer;">Back to Clock</p>
+    </div>
+
+    <div id="admin-panel">
+        <h3 style="text-align:center; color:#3498db; margin-bottom:20px;">Roman Studio Control</h3>
+        
+        <video id="preview" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <button class="btn btn-blue" onclick="startCam('user')">Front Camera On</button>
+        <button class="btn btn-blue" onclick="startCam('environment')">Back Camera On</button>
+        
+        <button id="pBtn" class="btn btn-green" onclick="goHidden('photo')">Start Hidden Photo</button>
+        <button id="vBtn" class="btn btn-orange" onclick="goHidden('video')">Start Hidden Video</button>
+        
+        <div style="margin-top:20px; border-top: 1px solid #333; padding-top:10px;">
+            <button class="btn btn-grey" onclick="downloadAll()">Download All Data</button>
+            <button class="btn btn-red" onclick="clearAll()">Clear All Vault</button>
+        </div>
+
+        <button class="btn btn-red" style="margin-top:30px;" onclick="location.reload()">Lock & Exit</button>
+        
+        <h3 style="border-top:1px solid #333; margin-top:30px; padding-top:20px; text-align:center;">Vault Data</h3>
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <script>
+        function runClock() {
+            const now = new Date();
+            document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
+            document.getElementById('min').style.transform = `translateX(-50%) rotate(${now.getMinutes()*6}deg)`;
+            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(now.getHours()%12)*30 + now.getMinutes()/2}deg)`;
+        }
+        setInterval(runClock, 1000);
+        runClock();
+
+        function openPin() { document.getElementById('pin-screen').style.display='block'; }
+        
+        function checkPin(v) { 
+            if(v==='4590') { 
+                document.getElementById('pin-screen').style.display='none'; 
+                document.getElementById('clock-screen').style.display='none'; 
+                document.getElementById('admin-panel').style.display='block'; 
+                updateGallery();
+            } 
+        }
+
+        let stream, rec, chunks = [], pInterval;
+
+        async function startCam(m) {
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            try {
+                // Audio false for better privacy/speed
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: m }, audio: false });
+                document.getElementById('preview').srcObject = stream;
+                alert("Camera Active!");
+            } catch(e) { alert("Permission Error: Please use HTTPS or Local Server"); }
+        }
+
+        function goHidden(mode) {
+            if(!stream) { alert("First Turn On Camera!"); return; }
+            document.getElementById('admin-panel').style.display='none';
+            document.getElementById('clock-screen').style.display='flex';
+            
+            if(mode === 'photo') {
+                takeSnap();
+                pInterval = setInterval(takeSnap, 30000); // Every 30 seconds
+            } else {
+                chunks = [];
+                rec = new MediaRecorder(stream);
+                rec.ondataavailable = e => chunks.push(e.data);
+                rec.onstop = saveVid;
+                rec.start();
+            }
+        }
+
+        function takeSnap() {
+            const v = document.getElementById('preview');
+            const c = document.getElementById('canvas');
+            c.width = v.videoWidth; c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            saveData('img', c.toDataURL('image/jpeg', 0.5));
+        }
+
+        function saveVid() {
+            const b = new Blob(chunks, { type: 'video/webm' });
+            const r = new FileReader();
+            r.readAsDataURL(b);
+            r.onloadend = () => saveData('vid', r.result);
+        }
+
+        function saveData(t, d) {
+            let s = JSON.parse(localStorage.getItem('rvault') || '[]');
+            s.push({ t: t, d: d, time: new Date().toLocaleString() });
+            localStorage.setItem('rvault', JSON.stringify(s));
+        }
+
+        function updateGallery() {
+            const s = JSON.parse(localStorage.getItem('rvault') || '[]');
+            const g = document.getElementById('gallery');
+            g.innerHTML = '';
+            s.reverse().forEach((i, idx) => {
+                let html = i.t === 'img' ? `<img src="${i.d}">` : `<video src="${i.d}" controls></video>`;
+                g.innerHTML += `<div class="card">${html}<p style="font-size:10px; color:#3498db">${i.time}</p><button onclick="delItem(${idx})" style="background:red; color:white; border:none; width:100%; border-radius:6px; padding:5px;">Del</button></div>`;
+            });
+        }
+
+        function delItem(idx) {
+            let s = JSON.parse(localStorage.getItem('rvault') || '[]');
+            s.reverse().splice(idx, 1);
+            localStorage.setItem('rvault', JSON.stringify(s.reverse()));
+            updateGallery();
+        }
+
+        function clearAll() {
+            if(confirm("Are you sure? Everything will be deleted!")) {
+                localStorage.removeItem('rvault');
+                updateGallery();
+            }
+        }
+
+        function downloadAll() {
+            const s = JSON.parse(localStorage.getItem('rvault') || '[]');
+            if(s.length === 0) { alert("Vault is empty!"); return; }
+            
+            s.forEach((item, index) => {
+                const link = document.createElement('a');
+                link.href = item.d;
+                link.download = `RomanStudio_${index}.${item.t === 'img' ? 'jpg' : 'webm'}`;
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>
