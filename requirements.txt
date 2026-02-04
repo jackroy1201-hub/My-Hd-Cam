@@ -1,9 +1,0 @@
-streamlit
-opencv-python-headless
-numpy
-Pillow
-streamlit-image-comparison
-moviepy
-
-
-
