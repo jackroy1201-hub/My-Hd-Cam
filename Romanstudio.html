@@ -70,12 +70,10 @@
         </div>
         <button class="btn btn-red" style="margin-top:20px;" onclick="location.reload()">Lock & Exit</button>
         
-        <h3 style="border-top:1px solid #333; margin-top:30px; padding-top:20px; text-align:center;">Vault Data</h3>
         <div id="gallery" class="gallery"></div>
     </div>
 
     <script>
-        // گھڑی چلانے کا فنکشن
         function runClock() {
             const now = new Date();
             document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
@@ -85,7 +83,11 @@
         setInterval(runClock, 1000);
         runClock();
 
-        function openPin() { document.getElementById('pin-screen').style.display='block'; }
+        function openPin() { 
+            document.getElementById('pin-screen').style.display='block'; 
+            document.getElementById('pinIn').value = '';
+            document.getElementById('pinIn').focus();
+        }
         
         function checkPin(v) { 
             if(v==='4590') { 
@@ -103,54 +105,69 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: m, width: 480 }, audio: false });
                 document.getElementById('preview').srcObject = stream;
+                alert("Camera Activated!");
             } catch(e) { alert("Camera Error: " + e.message); }
         }
 
+        // ہائیڈ (Hide) کرنے کا بہتر فنکشن
         function goHidden(mode) {
-            if(!stream) { alert("First Turn On Camera!"); return; }
+            if(!stream) { alert("Please turn on Camera first!"); return; }
+            
+            // فوراً گھڑی والی اسکرین پر جائیں
             document.getElementById('admin-panel').style.display='none';
             document.getElementById('clock-screen').style.display='flex';
             
             if(mode === 'photo') {
                 takeSnap();
-                pInterval = setInterval(takeSnap, 30000); // ہر 30 سیکنڈ بعد فوٹو
+                if(pInterval) clearInterval(pInterval);
+                pInterval = setInterval(takeSnap, 30000);
             } else {
-                chunks = [];
-                rec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
-                rec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-                rec.onstop = () => { saveVid(); setTimeout(() => location.reload(), 2000); };
-                rec.start(1000);
-                
-                // 5 منٹ بعد آٹو اسٹاپ
-                vTimer = setTimeout(() => { if(rec.state === "recording") rec.stop(); }, 300000);
+                startVideoRecording();
             }
+        }
+
+        function startVideoRecording() {
+            chunks = [];
+            rec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+            rec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+            rec.onstop = () => { 
+                saveVid(); 
+                setTimeout(() => location.reload(), 1500); 
+            };
+            rec.start(1000);
+            
+            // 5 منٹ کا ٹائمر
+            if(vTimer) clearTimeout(vTimer);
+            vTimer = setTimeout(() => { if(rec.state === "recording") rec.stop(); }, 300000);
         }
 
         function takeSnap() {
             const v = document.getElementById('preview');
             const c = document.getElementById('canvas');
+            if(!v.videoWidth) return;
             c.width = v.videoWidth; c.height = v.videoHeight;
             c.getContext('2d').drawImage(v, 0, 0);
             saveData('img', c.toDataURL('image/jpeg', 0.5));
         }
 
         function saveVid() {
+            if(chunks.length === 0) return;
             const b = new Blob(chunks, { type: 'video/webm' });
             const r = new FileReader();
             r.readAsDataURL(b);
-            r.onloadend = () => { saveData('vid', r.result); updateGallery(); };
+            r.onloadend = () => { saveData('vid', r.result); };
         }
 
         function saveData(t, d) {
             let s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            s.push({ t: t, d: d, time: new Date().toLocaleString() });
+            s.push({ t: t, d: d, time: new Date().toLocaleString('en-US', { hour12: true }) });
             localStorage.setItem('rvault', JSON.stringify(s));
         }
 
         function updateGallery() {
             const s = JSON.parse(localStorage.getItem('rvault') || '[]');
             const g = document.getElementById('gallery');
-            g.innerHTML = '';
+            g.innerHTML = '<h3 style="grid-column: 1 / span 2; border-top:1px solid #333; padding-top:20px;">Vault Data</h3>';
             s.slice().reverse().forEach((i, idx) => {
                 let html = i.t === 'img' ? `<img src="${i.d}">` : `<video src="${i.d}" controls></video>`;
                 g.innerHTML += `<div class="card">${html}<p style="font-size:10px; color:#3498db">${i.time}</p><button onclick="delItem(${s.length - 1 - idx})" style="background:red; border:none; color:white; width:100%; border-radius:6px; padding:5px;">Del</button></div>`;
@@ -171,7 +188,7 @@
             s.forEach((item, index) => {
                 const link = document.createElement('a');
                 link.href = item.d;
-                link.download = `RomanStudio_${index}.${item.t === 'img' ? 'jpg' : 'webm'}`;
+                link.download = `Roman_${index}.${item.t === 'img' ? 'jpg' : 'webm'}`;
                 link.click();
             });
         }
