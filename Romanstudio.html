@@ -62,7 +62,8 @@
         <button class="btn btn-blue" onclick="startCam('user')">Front Camera On</button>
         <button class="btn btn-blue" onclick="startCam('environment')">Back Camera On</button>
         <button class="btn btn-green" onclick="goHidden('photo')">Start Auto Photo (30s)</button>
-        <button class="btn btn-orange" onclick="goHidden('video')">Start 5 Min Video</button>
+        <button class="btn btn-orange" id="vidBtn" onclick="goHidden('video')">Start 5 Min Video</button>
+        <button class="btn btn-red" id="stopBtn" style="display:none;" onclick="stopRecordingManually()">Stop Recording Now</button>
         
         <div style="margin-top:20px; border-top: 1px solid #333; padding-top:10px;">
             <button class="btn btn-grey" onclick="downloadAll()">Download All Data</button>
@@ -103,19 +104,14 @@
         async function startCam(m) {
             if(stream) stream.getTracks().forEach(t => t.stop());
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: m, width: 480 }, audio: false });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: m, width: 480 }, audio: true });
                 document.getElementById('preview').srcObject = stream;
-                alert("Camera Activated!");
+                alert("Camera & Mic Activated!");
             } catch(e) { alert("Camera Error: " + e.message); }
         }
 
-        // ہائیڈ (Hide) کرنے کا بہتر فنکشن
         function goHidden(mode) {
             if(!stream) { alert("Please turn on Camera first!"); return; }
-            
-            // فوراً گھڑی والی اسکرین پر جائیں
-            document.getElementById('admin-panel').style.display='none';
-            document.getElementById('clock-screen').style.display='flex';
             
             if(mode === 'photo') {
                 takeSnap();
@@ -124,21 +120,42 @@
             } else {
                 startVideoRecording();
             }
+            
+            // فوراً کلاک سکرین پر جائیں
+            document.getElementById('admin-panel').style.display='none';
+            document.getElementById('clock-screen').style.display='flex';
         }
 
         function startVideoRecording() {
             chunks = [];
-            rec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+            rec = new MediaRecorder(stream);
             rec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+            
             rec.onstop = () => { 
                 saveVid(); 
-                setTimeout(() => location.reload(), 1500); 
+                alert("Video Saved to Roman Studio Vault!");
             };
-            rec.start(1000);
-            
-            // 5 منٹ کا ٹائمر
-            if(vTimer) clearTimeout(vTimer);
-            vTimer = setTimeout(() => { if(rec.state === "recording") rec.stop(); }, 300000);
+
+            rec.start();
+            document.getElementById('vidBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+
+            // 5 منٹ (300,000 ملی سیکنڈ) کے بعد خودکار بند ہونا
+            vTimer = setTimeout(() => {
+                if(rec && rec.state === "recording") {
+                    rec.stop();
+                    location.reload(); // سیو کرنے کے بعد ری فریش
+                }
+            }, 300000); 
+        }
+
+        function stopRecordingManually() {
+            if(rec && rec.state === "recording") {
+                clearTimeout(vTimer);
+                rec.stop();
+                document.getElementById('stopBtn').style.display = 'none';
+                document.getElementById('vidBtn').style.display = 'block';
+            }
         }
 
         function takeSnap() {
@@ -155,7 +172,7 @@
             const b = new Blob(chunks, { type: 'video/webm' });
             const r = new FileReader();
             r.readAsDataURL(b);
-            r.onloadend = () => { saveData('vid', r.result); };
+            r.onloadend = () => { saveData('vid', r.result); updateGallery(); };
         }
 
         function saveData(t, d) {
