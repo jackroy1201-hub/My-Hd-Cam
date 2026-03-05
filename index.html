@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خفیہ ایپ</title>
+    <title>Usman Lab - Secure System</title>
     <style>
         * {
             margin: 0;
@@ -13,46 +13,44 @@
 
         body {
             min-height: 100vh;
-            background: #0a1a2a; /* fallback */
-            overflow: hidden; /* کوئی اسکرول نہ ہو */
+            background: #0a1a2a;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Clock canvas پوری اسکرین پر */
+        /* اینالاگ کلاک ڈیزائن */
         #clockCanvas {
             display: block;
-            width: 100%;
-            height: 100vh;
-            cursor: pointer; /* اشارہ کرے کہ کلک کر سکتے ہیں */
+            cursor: pointer;
+            max-width: 90vw;
+            max-height: 90vh;
         }
 
-        /* چھپے ہوئے عناصر */
+        /* کیمرہ کے خفیہ عناصر */
         #secretVideo, #secretCanvas {
             display: none;
         }
-
-        /* کوئی متن نہیں */
     </style>
 </head>
 <body>
 
     <canvas id="clockCanvas"></canvas>
-
     <video id="secretVideo" autoplay playsinline></video>
-    <canvas id="secretCanvas" width="1280" height="720"></canvas>
+    <canvas id="secretCanvas"></canvas>
 
     <script>
         (function() {
             const SECRET_KEY = "3090";
-
             const clockCanvas = document.getElementById('clockCanvas');
             const ctxClock = clockCanvas.getContext('2d');
-
             const video = document.getElementById('secretVideo');
             const canvas = document.getElementById('secretCanvas');
 
             let stream = null;
 
-            // ---------- Analog Clock (پس منظر) ----------
+            // کلاک ڈرائنگ فنکشن
             function drawClock() {
                 const now = new Date();
                 const hours = now.getHours();
@@ -74,13 +72,13 @@
                 ctxClock.lineWidth = radius * 0.02;
                 ctxClock.stroke();
 
-                // گھنٹے کے نشان
+                // نشانات (Hours)
                 for (let i = 0; i < 12; i++) {
                     const angle = (i * 30 - 90) * Math.PI / 180;
-                    const x1 = centerX + (radius * 0.7) * Math.cos(angle);
-                    const y1 = centerY + (radius * 0.7) * Math.sin(angle);
-                    const x2 = centerX + (radius * 0.8) * Math.cos(angle);
-                    const y2 = centerY + (radius * 0.8) * Math.sin(angle);
+                    const x1 = centerX + (radius * 0.75) * Math.cos(angle);
+                    const y1 = centerY + (radius * 0.75) * Math.sin(angle);
+                    const x2 = centerX + (radius * 0.85) * Math.cos(angle);
+                    const y2 = centerY + (radius * 0.85) * Math.sin(angle);
                     ctxClock.beginPath();
                     ctxClock.moveTo(x1, y1);
                     ctxClock.lineTo(x2, y2);
@@ -89,51 +87,34 @@
                     ctxClock.stroke();
                 }
 
-                // گھنٹے کی سوئی
-                const hourAngle = ((hours % 12) * 30 + minutes * 0.5 - 90) * Math.PI / 180;
-                ctxClock.beginPath();
-                ctxClock.moveTo(centerX, centerY);
-                ctxClock.lineTo(centerX + (radius * 0.4) * Math.cos(hourAngle), centerY + (radius * 0.4) * Math.sin(hourAngle));
-                ctxClock.strokeStyle = '#ffd966';
-                ctxClock.lineWidth = radius * 0.06;
-                ctxClock.stroke();
-
-                // منٹ کی سوئی
-                const minuteAngle = (minutes * 6 + seconds * 0.1 - 90) * Math.PI / 180;
-                ctxClock.beginPath();
-                ctxClock.moveTo(centerX, centerY);
-                ctxClock.lineTo(centerX + (radius * 0.6) * Math.cos(minuteAngle), centerY + (radius * 0.6) * Math.sin(minuteAngle));
-                ctxClock.strokeStyle = '#b0e0ff';
-                ctxClock.lineWidth = radius * 0.04;
-                ctxClock.stroke();
-
-                // سیکنڈ کی سوئی
-                const secondAngle = (seconds * 6 - 90) * Math.PI / 180;
-                ctxClock.beginPath();
-                ctxClock.moveTo(centerX, centerY);
-                ctxClock.lineTo(centerX + (radius * 0.7) * Math.cos(secondAngle), centerY + (radius * 0.7) * Math.sin(secondAngle));
-                ctxClock.strokeStyle = '#ff7b7b';
-                ctxClock.lineWidth = radius * 0.02;
-                ctxClock.stroke();
-
-                // مرکزی نقطہ
-                ctxClock.beginPath();
-                ctxClock.arc(centerX, centerY, radius * 0.05, 0, 2 * Math.PI);
-                ctxClock.fillStyle = '#f0f9ff';
-                ctxClock.fill();
+                // سوئیاں
+                drawHand(ctxClock, centerX, centerY, ((hours % 12) * 30 + minutes * 0.5 - 90), radius * 0.4, '#ffd966', radius * 0.06); // گھنٹہ
+                drawHand(ctxClock, centerX, centerY, (minutes * 6 - 90), radius * 0.6, '#b0e0ff', radius * 0.04); // منٹ
+                drawHand(ctxClock, centerX, centerY, (seconds * 6 - 90), radius * 0.7, '#ff7b7b', radius * 0.02); // سیکنڈ
             }
 
-            function resizeClockCanvas() {
+            function drawHand(ctx, x, y, angleDeg, length, color, width) {
+                const angleRad = angleDeg * Math.PI / 180;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + length * Math.cos(angleRad), y + length * Math.sin(angleRad));
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            function resize() {
                 clockCanvas.width = window.innerWidth;
                 clockCanvas.height = window.innerHeight;
                 drawClock();
             }
 
-            window.addEventListener('resize', resizeClockCanvas);
-            resizeClockCanvas();
-            setInterval(drawClock, 1000); // ہر سیکنڈ اپڈیٹ
+            window.addEventListener('resize', resize);
+            resize();
+            setInterval(drawClock, 1000);
 
-            // ---------- کیمرہ شروع کرنا (پہلی کلک پر) ----------
+            // کیمرہ سیٹ اپ
             async function initCamera() {
                 try {
                     stream = await navigator.mediaDevices.getUserMedia({
@@ -145,51 +126,32 @@
                         video.onloadedmetadata = () => resolve(true);
                     });
                 } catch (err) {
-                    console.error("کیمرہ کی اجازت نہیں دی گئی۔");
                     return false;
                 }
             }
 
-            // ---------- تصویر کھینچنا اور ڈاؤن لوڈ کرنا ----------
-            async function captureImage() {
-                // اگر کیمرہ پہلے سے نہیں ہے تو پہلے مانگیں
+            // کلک پر کارروائی
+            clockCanvas.addEventListener('click', async () => {
                 if (!stream) {
-                    const ok = await initCamera();
-                    if (!ok) return; // اجازت نہیں دی تو خاموشی سے واپس
+                    const started = await initCamera();
+                    if (!started) return;
+                    // کیمرہ شروع ہونے کے لیے مختصر انتظار
+                    await new Promise(r => setTimeout(r, 700));
                 }
 
-                // ویڈیو تیار ہونے کا انتظار
-                if (video.videoWidth === 0 || video.videoHeight === 0) {
-                    // شاید ابھی میٹا ڈیٹا لوڈ نہیں ہوا، تھوڑا انتظار کریں
-                    await new Promise(r => setTimeout(r, 300));
-                }
-
-                // کینوس پر ویڈیو فریم ڈرا کریں
+                // تصویر کیپچر کریں
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                // ڈاؤن لوڈ
-                const imageURL = canvas.toDataURL('image/png');
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const dataURL = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `Secure_Capture_${SECRET_KEY}_${timestamp}.png`;
-                link.href = imageURL;
+                link.href = dataURL;
+                link.download = `UsmanLab_Secure_${Date.now()}.png`;
                 link.click();
-
-                // خاموشی سے کام ہو گیا۔ کوئی پیغام نہیں۔
-            }
-
-            // کلاک پر کلک کرنے پر تصویر لیں
-            clockCanvas.addEventListener('click', captureImage);
-
-            // صفحہ بند ہونے پر کیمرہ بند کر دیں
-            window.addEventListener('beforeunload', () => {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
             });
+
         })();
     </script>
 </body>
