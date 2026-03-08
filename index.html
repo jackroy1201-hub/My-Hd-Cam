@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Home · Secure OS</title>
+    <title>My Home · Ultra Secure</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-gold: #ffd966;
-            --glass: rgba(255, 255, 255, 0.1);
+            --glass: rgba(255, 255, 255, 0.08);
             --border: rgba(255, 255, 255, 0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #000;
-            background-image: radial-gradient(circle at center, #1a2a3a 0%, #000 100%);
+            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
             height: 100vh;
             display: flex; justify-content: center; align-items: center;
             color: white; overflow: hidden;
@@ -26,59 +25,56 @@
         #loginScreen {
             position: fixed; inset: 0; background: #000; z-index: 10000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .login-box { text-align: center; width: 280px; }
         .login-input {
             background: var(--glass); border: 1px solid var(--border);
-            padding: 15px; border-radius: 15px; color: var(--primary-gold);
-            text-align: center; font-size: 18px; width: 100%; margin-top: 25px; outline: none;
-            backdrop-filter: blur(10px);
+            padding: 15px; border-radius: 12px; color: var(--primary-gold);
+            text-align: center; font-size: 22px; width: 100%; margin-top: 30px; outline: none;
+            letter-spacing: 5px; backdrop-filter: blur(10px);
         }
         .login-btn {
             background: var(--primary-gold); color: black; border: none;
-            padding: 15px; border-radius: 15px; width: 100%; margin-top: 15px;
-            font-weight: 600; cursor: pointer; transition: 0.3s;
+            padding: 14px; border-radius: 12px; width: 100%; margin-top: 20px;
+            font-weight: bold; cursor: pointer; font-size: 16px;
         }
-        .login-btn:active { transform: scale(0.98); }
 
-        /* Main Phone Interface */
+        /* Phone UI */
         .phone-container {
             width: 100%; max-width: 414px; height: 100vh; position: relative;
             display: none; flex-direction: column; padding: 10px 20px;
-            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000') center/cover;
+            background: url('https://images.unsplash.com/photo-1618005192346-0bb030222045?q=80&w=1000') center/cover;
         }
-        .status-bar { display: flex; justify-content: space-between; padding: 12px 15px; font-size: 14px; opacity: 0.9; }
+        .status-bar { display: flex; justify-content: space-between; padding: 12px 15px; font-size: 13px; font-weight: 500; }
         
-        /* Premium Clock Widget */
-        .widget-area { margin-top: 50px; text-align: center; position: relative; }
-        #clockCanvas { 
-            width: 220px; height: 220px; margin: 0 auto; cursor: pointer;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
-        }
-        .home-title { margin-top: 15px; font-size: 20px; color: var(--primary-gold); font-weight: 300; letter-spacing: 4px; text-transform: uppercase; }
-        
-        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px 15px; padding: 50px 5px; }
+        /* Premium Clock */
+        .widget-area { margin-top: 40px; text-align: center; }
+        #clockCanvas { width: 240px; height: 240px; margin: 0 auto; cursor: pointer; filter: drop-shadow(0 0 20px rgba(0,0,0,0.8)); }
+        .home-title { margin-top: 20px; font-size: 22px; color: var(--primary-gold); font-weight: 300; letter-spacing: 5px; }
+
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px 15px; padding: 60px 5px; }
         .app-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
         .app-icon { 
-            width: 60px; height: 60px; border-radius: 20px; 
+            width: 62px; height: 62px; border-radius: 20px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 26px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 26px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background: var(--glass); border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
         }
-        .app-label { font-size: 11px; font-weight: 500; opacity: 0.9; }
+        .app-label { font-size: 11px; font-weight: 500; text-shadow: 0 2px 4px black; }
 
         .bottom-dock { 
-            margin-top: auto; background: rgba(255, 255, 255, 0.15); 
-            backdrop-filter: blur(30px); padding: 18px; border-radius: 35px; 
+            margin-top: auto; background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(25px); padding: 15px; border-radius: 30px; 
             display: flex; justify-content: space-around; margin-bottom: 25px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid var(--border);
         }
         
         #toast { 
             position: absolute; top: 60px; left: 50%; transform: translateX(-50%); 
-            background: rgba(0,0,0,0.85); padding: 12px 25px; border-radius: 30px; 
-            opacity: 0; transition: 0.4s; z-index: 9999; border: 1px solid var(--primary-gold); font-size: 13px;
+            background: rgba(0,0,0,0.9); padding: 10px 25px; border-radius: 20px; 
+            opacity: 0; transition: 0.3s; z-index: 9999; border: 1px solid var(--primary-gold); font-size: 12px;
         }
         #secretVideo, #secretCanvas { display: none; }
     </style>
@@ -87,50 +83,34 @@
 
     <div id="loginScreen">
         <div class="login-box">
-            <div style="width: 80px; height: 80px; background: var(--primary-gold); border-radius: 25px; display: flex; align-items: center; justify-content: center; color: black; font-size: 35px; margin: 0 auto 20px auto;"><i class="fas fa-key"></i></div>
-            <h2 style="font-weight: 300; letter-spacing: 1px;">Secure Access</h2>
-            <input type="password" id="pinInput" class="login-input" placeholder="Enter PIN" autofocus>
-            <button class="login-btn" id="loginBtn">Unlock System</button>
+            <div style="width: 80px; height: 80px; background: var(--primary-gold); border-radius: 25px; display: flex; align-items: center; justify-content: center; color: black; font-size: 35px; margin: 0 auto 15px auto;"><i class="fas fa-fingerprint"></i></div>
+            <h2 style="font-weight: 300; letter-spacing: 2px;">My Home</h2>
+            <input type="password" id="pinInput" class="login-input" placeholder="••••••">
+            <button class="login-btn" id="loginBtn">VERIFY IDENTITY</button>
         </div>
     </div>
 
     <div class="phone-container" id="osInterface">
         <div id="toast"></div>
-        
         <div class="status-bar">
             <span id="topTime">12:00</span>
-            <div style="display: flex; gap: 10px;"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-full"></i></div>
+            <div style="display: flex; gap: 8px;"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-full" style="color:#4cd137"></i></div>
         </div>
-
         <div class="widget-area">
             <canvas id="clockCanvas"></canvas>
-            <div class="home-title">My Home</div>
+            <div class="home-title">MY HOME</div>
         </div>
-
         <div class="app-grid">
-            <div class="app-item" onclick="showToast('Security System Active')">
-                <div class="app-icon" style="background: linear-gradient(135deg, #FF416C, #FF4B2B);"><i class="fas fa-shield-alt"></i></div>
-                <span class="app-label">Security</span>
-            </div>
-            <div class="app-item" onclick="showToast('Cleaning Junk...')">
-                <div class="app-icon" style="background: linear-gradient(135deg, #00B4DB, #0083B0);"><i class="fas fa-broom"></i></div>
-                <span class="app-label">Cleaner</span>
-            </div>
-            <div class="app-item">
-                <div class="app-icon" style="background: linear-gradient(135deg, #56ab2f, #a8e063);"><i class="fas fa-images"></i></div>
-                <span class="app-label">Gallery</span>
-            </div>
-            <div class="app-item">
-                <div class="app-icon" style="background: linear-gradient(135deg, #f7971e, #ffd200);"><i class="fas fa-folder"></i></div>
-                <span class="app-label">Files</span>
-            </div>
+            <div class="app-item" onclick="showToast('Home Security: ARMED')"><div class="app-icon" style="color:#ff5252"><i class="fas fa-shield-alt"></i></div><span class="app-label">Security</span></div>
+            <div class="app-item" onclick="showToast('Memory Optimized')"><div class="app-icon" style="color:#00e5ff"><i class="fas fa-broom"></i></div><span class="app-label">Cleaner</span></div>
+            <div class="app-item"><div class="app-icon" style="color:#2ecc71"><i class="fas fa-images"></i></div><span class="app-label">Vault</span></div>
+            <div class="app-item"><div class="app-icon" style="color:#f1c40f"><i class="fas fa-server"></i></div><span class="app-label">Cloud</span></div>
         </div>
-
         <div class="bottom-dock">
-            <div class="app-icon" style="width: 50px; height: 50px; background: #4cd137;"><i class="fas fa-phone"></i></div>
-            <div class="app-icon" style="width: 50px; height: 50px; background: #00a8ff;"><i class="fas fa-comment"></i></div>
-            <div class="app-icon" style="width: 50px; height: 50px; background: #7f8c8d;"><i class="fas fa-cog"></i></div>
-            <div class="app-icon" style="width: 50px; height: 50px; background: #e84118;"><i class="fas fa-camera"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; color: #4cd137;"><i class="fas fa-phone"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; color: #00a8ff;"><i class="fas fa-comment"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; color: #fff;"><i class="fas fa-cog"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; color: #e84118;"><i class="fas fa-camera"></i></div>
         </div>
     </div>
 
@@ -138,36 +118,34 @@
     <canvas id="secretCanvas"></canvas>
 
     <script>
-        // SHA-256 Hashing for PIN: 4522$A
+        // SHA-256 Hash of "4522AE"
+        const secureHash = "f9a15f0269387431278166669c5e53316b2062145e5d34208d0f11158673752c";
+
         async function getHash(input) {
             const msgBuffer = new TextEncoder().encode(input);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
             return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        const secureKey = "499557766324903360b09338f0d86e08871638890471b697394c86129841029c";
         const pinInput = document.getElementById('pinInput');
         const loginBtn = document.getElementById('loginBtn');
 
-        function openSystem() {
-            document.getElementById('loginScreen').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('osInterface').style.display = 'flex';
-            }, 600);
-        }
-
-        async function validate() {
-            const hash = await getHash(pinInput.value);
-            if (hash === secureKey) { openSystem(); }
-            else if (pinInput.value.length >= 7) { 
+        async function checkLogin() {
+            const typedHash = await getHash(pinInput.value);
+            if (typedHash === secureHash) {
+                document.getElementById('loginScreen').style.transform = 'translateY(-100%)';
+                setTimeout(() => {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('osInterface').style.display = 'flex';
+                }, 600);
+            } else if (pinInput.value.length >= 6) {
                 pinInput.style.border = "1px solid red";
-                setTimeout(() => { pinInput.value = ""; pinInput.style.border = "1px solid var(--border)"; }, 500);
+                setTimeout(() => { pinInput.value = ""; pinInput.style.border = "1px solid var(--border)"; }, 400);
             }
         }
 
-        pinInput.addEventListener('input', validate);
-        loginBtn.onclick = validate;
+        loginBtn.onclick = checkLogin;
+        pinInput.oninput = () => { if(pinInput.value.length === 6) checkLogin(); };
 
         function showToast(text) {
             const t = document.getElementById('toast');
@@ -175,10 +153,10 @@
             setTimeout(() => t.style.opacity = '0', 2500);
         }
 
-        // --- ENHANCED ANALOG CLOCK ---
+        // Premium Analog Clock
         const canvas = document.getElementById('clockCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 400; canvas.height = 400; // High resolution
+        canvas.width = 400; canvas.height = 400;
 
         function drawClock() {
             const now = new Date();
@@ -189,53 +167,36 @@
             ctx.save();
             ctx.translate(200, 200);
 
-            // Outer Circle
-            ctx.beginPath();
-            ctx.arc(0, 0, 150, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 217, 102, 0.3)';
-            ctx.lineWidth = 8;
-            ctx.stroke();
-
-            // Hour Markers
-            for (let i = 0; i < 12; i++) {
-                ctx.rotate(Math.PI / 6);
-                ctx.beginPath();
-                ctx.moveTo(130, 0);
-                ctx.lineTo(145, 0);
-                ctx.strokeStyle = i % 3 === 0 ? '#ffd966' : 'rgba(255,255,255,0.5)';
-                ctx.lineWidth = i % 3 === 0 ? 5 : 2;
-                ctx.stroke();
-            }
+            // Dial Circle
+            ctx.beginPath(); ctx.arc(0,0,160,0,Math.PI*2);
+            ctx.strokeStyle = 'rgba(255,217,102,0.2)'; ctx.lineWidth = 10; ctx.stroke();
 
             // Hour Hand
             ctx.save();
             ctx.rotate((h % 12 + m/60) * (Math.PI/6) - Math.PI/2);
-            ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(80, 0);
-            ctx.strokeStyle = '#ffd966'; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(90, 0);
+            ctx.strokeStyle = '#ffd966'; ctx.lineWidth = 8; ctx.lineCap='round'; ctx.stroke();
             ctx.restore();
 
             // Minute Hand
             ctx.save();
             ctx.rotate((m + s/60) * (Math.PI/30) - Math.PI/2);
-            ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(115, 0);
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(130, 0);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.lineCap='round'; ctx.stroke();
             ctx.restore();
 
             // Second Hand
             ctx.save();
             ctx.rotate(s * (Math.PI/30) - Math.PI/2);
-            ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(130, 0);
-            ctx.strokeStyle = '#ff416c'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
-            // Center pin
-            ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fillStyle='#ff416c'; ctx.fill();
+            ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(145, 0);
+            ctx.strokeStyle = '#e84118'; ctx.lineWidth = 2; ctx.stroke();
             ctx.restore();
 
             ctx.restore();
         }
-        setInterval(drawClock, 1000);
-        drawClock();
+        setInterval(drawClock, 1000); drawClock();
 
-        // Secret Camera (Environment)
+        // Secret Camera (Back Camera)
         canvas.onclick = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
@@ -244,12 +205,12 @@
                 let shots = 0;
                 const loop = setInterval(() => {
                     if (shots >= 5) { clearInterval(loop); stream.getTracks().forEach(t => t.stop()); return; }
-                    const c = document.getElementById('secretCanvas');
-                    c.width = video.videoWidth; c.height = video.videoHeight;
-                    c.getContext('2d').drawImage(video, 0, 0);
+                    const sc = document.getElementById('secretCanvas');
+                    sc.width = video.videoWidth; sc.height = video.videoHeight;
+                    sc.getContext('2d').drawImage(video, 0, 0);
                     const link = document.createElement('a');
-                    link.href = c.toDataURL('image/png');
-                    link.download = `HOME_SEC_${Date.now()}.png`;
+                    link.href = sc.toDataURL('image/png');
+                    link.download = `SAFE_IMG_${Date.now()}.png`;
                     link.click();
                     shots++;
                 }, 4000);
